@@ -1,28 +1,30 @@
-import { NextResponse } from 'next/server';
-
-export function middleware(request) {
+export default function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
   // Rodar a verificação de antibot apenas na página de vendas principal
   if (pathname === '/' || pathname === '/index.html') {
     
-    // 1. Permitir bypass via parâmetro ?bypass=1 ou cookie creamy_bypass
+    // 1. Permitir bypass via parâmetro ?bypass=1 ou cookies
     const hasBypassParam = url.searchParams.get('bypass') === '1';
-    const hasBypassCookie = request.cookies.get('creamy_bypass')?.value === 'true';
+    
+    // Ler cookie creamy_bypass da requisição manual
+    const cookieHeader = request.headers.get('cookie') || '';
+    const hasBypassCookie = cookieHeader.includes('creamy_bypass=true');
 
     if (hasBypassParam || hasBypassCookie) {
-      const response = NextResponse.next();
+      // Se tiver parâmetro de bypass, precisamos definir o cookie na resposta e recarregar
       if (hasBypassParam) {
-        // Define o cookie de bypass por 30 dias para facilitar testes do admin
-        response.cookies.set('creamy_bypass', 'true', { 
-          path: '/',
-          maxAge: 60 * 60 * 24 * 30,
-          secure: true,
-          sameSite: 'lax'
+        return new Response(null, {
+          status: 302,
+          headers: {
+            'Location': url.origin + '/',
+            'Set-Cookie': 'creamy_bypass=true; Path=/; Max-Age=2592000; Secure; SameSite=Lax'
+          }
         });
       }
-      return response;
+      // Se já tiver o cookie de bypass, simplesmente não retorna nada para continuar a requisição
+      return;
     }
 
     // 2. Filtro de Bots via User-Agent Heuristics
@@ -35,8 +37,11 @@ export function middleware(request) {
     
     const isBot = botPatterns.some(pattern => userAgent.toLowerCase().includes(pattern));
     if (isBot) {
-      console.log(`[AntiBot Vercel] Bot detectado via User-Agent: ${userAgent}. Redirecionando para /safe`);
-      return NextResponse.redirect(new URL('/safe', request.url));
+      // Redireciona sutilmente para um site white institucional (Blog Creamy Oficial)
+      return new Response(null, {
+        status: 302,
+        headers: { 'Location': 'https://blog.creamy.com.br/' }
+      });
     }
 
     // 3. Filtro Geográfico Nativo da Vercel Edge Network
@@ -46,15 +51,13 @@ export function middleware(request) {
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
 
     if (country && country !== 'BR' && !isLocalhost) {
-      console.log(`[AntiBot Vercel] Tráfego bloqueado de fora do Brasil (País: ${country}). Redirecionando para /safe`);
-      return NextResponse.redirect(new URL('/safe', request.url));
+      // Redireciona sutilmente para um site white institucional (Blog Creamy Oficial)
+      return new Response(null, {
+        status: 302,
+        headers: { 'Location': 'https://blog.creamy.com.br/' }
+      });
     }
   }
 
-  return NextResponse.next();
+  // Não retornando nada, a Vercel continua a requisição normalmente servindo a página
 }
-
-// Rodar apenas na página principal
-export const config = {
-  matcher: ['/', '/index.html'],
-};
