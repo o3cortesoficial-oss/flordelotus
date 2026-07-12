@@ -413,6 +413,64 @@ async function logLocalEvent(type, detail, value = 0) {
   }
 }
 
+// --- CONTROLE DE OVERLAY DO CLOAKER (SUBSTITUICAO TOTAL IN-PLACE E REVERSIVEL) ---
+let cloakerOverlay = null;
+const originalStyles = new Map();
+
+function showSafePageOverlay(safeUrl) {
+  if (cloakerOverlay) return;
+  
+  const execute = () => {
+    if (cloakerOverlay) return;
+    console.log("[Cloaker] Ativando overlay da Safe Page:", safeUrl);
+    
+    cloakerOverlay = document.createElement("iframe");
+    cloakerOverlay.id = "cloaker-safe-overlay";
+    cloakerOverlay.src = safeUrl;
+    cloakerOverlay.style.position = "fixed";
+    cloakerOverlay.style.top = "0";
+    cloakerOverlay.style.left = "0";
+    cloakerOverlay.style.width = "100vw";
+    cloakerOverlay.style.height = "100vh";
+    cloakerOverlay.style.border = "none";
+    cloakerOverlay.style.zIndex = "2147483647";
+    cloakerOverlay.style.backgroundColor = "#ffffff";
+    
+    const bodyChildren = Array.from(document.body.children);
+    bodyChildren.forEach(child => {
+      if (child !== cloakerOverlay && child.tagName !== "SCRIPT" && child.id !== "cloaker-safe-overlay") {
+        originalStyles.set(child, child.style.display);
+        child.style.display = "none";
+      }
+    });
+    
+    document.body.appendChild(cloakerOverlay);
+  };
+
+  if (document.body) {
+    execute();
+  } else {
+    document.addEventListener("DOMContentLoaded", execute);
+  }
+}
+
+function removeSafePageOverlay() {
+  if (!cloakerOverlay) return;
+  console.log("[Cloaker] Desativando overlay da Safe Page. Restaurando página original...");
+  
+  if (cloakerOverlay.parentNode) {
+    cloakerOverlay.parentNode.removeChild(cloakerOverlay);
+  }
+  cloakerOverlay = null;
+  
+  originalStyles.forEach((display, child) => {
+    if (child) {
+      child.style.display = display;
+    }
+  });
+  originalStyles.clear();
+}
+
 // --- CLOAKER (SISTEMA DE PROTECAO / SAFE PAGE - SUPABASE) ---
 async function runCloakerCheck() {
   try {
@@ -428,6 +486,7 @@ async function applyCloakerRules(cloaker, isRealtimeUpdate = false) {
   try {
     if (!cloaker.enabled) {
       console.log("[Cloaker] Proteção desativada nas configurações.");
+      removeSafePageOverlay();
       return;
     }
 
@@ -452,6 +511,7 @@ async function applyCloakerRules(cloaker, isRealtimeUpdate = false) {
         d.setTime(d.getTime() + (30*24*60*60*1000));
         document.cookie = "creamy_bypass=1; expires=" + d.toUTCString() + "; path=/";
       }
+      removeSafePageOverlay();
       return;
     }
 
@@ -526,7 +586,10 @@ async function applyCloakerRules(cloaker, isRealtimeUpdate = false) {
 
     // Se ja foi bloqueado por UA/dispositivo, agir imediatamente
     if (blockThisAccess) {
-      await logCloAccessImmediate(false, blockReason, botType || "other_block", cloaker.safe_url);
+      showSafePageOverlay(cloaker.safe_url || "/artigo-skincare-cuidados.html");
+      if (!isRealtimeUpdate) {
+        await logCloAccessImmediate(false, blockReason, botType || "other_block", cloaker.safe_url);
+      }
       return;
     }
 
@@ -569,18 +632,30 @@ async function applyCloakerRules(cloaker, isRealtimeUpdate = false) {
           }
 
           if (!allow) {
-            logCloakerAccess(false, ipReason, "other_block", cloaker.safe_url, data.ip, `${data.city || ""}, ${data.country_code}`);
+            showSafePageOverlay(cloaker.safe_url || "/artigo-skincare-cuidados.html");
+            if (!isRealtimeUpdate) {
+              logCloakerAccess(false, ipReason, "other_block", cloaker.safe_url, data.ip, `${data.city || ""}, ${data.country_code}`);
+            }
           } else {
-            logCloakerAccess(true, "Usuário Real Liberado", null, null, data.ip, `${data.city || ""}, ${data.country_code}`);
+            removeSafePageOverlay();
+            if (!isRealtimeUpdate) {
+              logCloakerAccess(true, "Usuário Real Liberado", null, null, data.ip, `${data.city || ""}, ${data.country_code}`);
+            }
           }
         })
         .catch(err => {
           clearTimeout(timeoutId);
           console.log("Falha ou timeout na API do Cloaker, liberando por segurança.");
-          logCloakerAccess(true, "Conexão Liberada (Timeout na API)", null, null, "Desconhecido", "BR");
+          removeSafePageOverlay();
+          if (!isRealtimeUpdate) {
+            logCloakerAccess(true, "Conexão Liberada (Timeout na API)", null, null, "Desconhecido", "BR");
+          }
         });
     } else {
-      logCloakerAccess(true, "Acesso Liberado (Sem Filtros IP)", null, null, "Desconhecido", "BR");
+      removeSafePageOverlay();
+      if (!isRealtimeUpdate) {
+        logCloakerAccess(true, "Acesso Liberado (Sem Filtros IP)", null, null, "Desconhecido", "BR");
+      }
     }
 
   } catch(e) {
@@ -623,26 +698,7 @@ async function logCloakerAccess(allowed, reason, botType, safeUrl, ip = "Desconh
     if (rpcError) console.error("Erro ao incrementar estatística:", rpcError);
     
     if (!allowed && safeUrl) {
-      console.warn("[Cloaker] BLOQUEADO! Substituindo HTML in-place:", safeUrl);
-      
-      fetch(safeUrl)
-        .then(res => {
-          if (!res.ok) throw new Error("Status " + res.status);
-          return res.text();
-        })
-        .then(html => {
-          document.open();
-          document.write(html);
-          document.close();
-          // Forçar substituição no documentElement se document.write não cobrir tudo instantaneamente
-          if (document.documentElement) {
-            document.documentElement.innerHTML = html;
-          }
-        })
-        .catch(err => {
-          console.error("Erro ao carregar Safe Page In-Place:", err);
-          window.location.replace(safeUrl);
-        });
+      showSafePageOverlay(safeUrl);
     }
   } catch(e) {
     console.error("Erro ao gravar logs do cloaker:", e);
