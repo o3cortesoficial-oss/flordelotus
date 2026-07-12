@@ -610,9 +610,127 @@
         height: 350px !important;
       }
     }
+
+    /* TOAST NOTIFICATIONS */
+    #toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--brand-teal);
+      border-radius: 10px;
+      padding: 14px 18px;
+      min-width: 280px;
+      max-width: 380px;
+      box-shadow: 0 8px 24px rgba(5, 77, 153, 0.10);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      pointer-events: all;
+      animation: toastSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .toast.toast-success { border-left-color: var(--color-green); }
+    .toast.toast-error   { border-left-color: var(--color-red); }
+    .toast.toast-info    { border-left-color: var(--brand-teal); }
+
+    .toast-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .toast-success .toast-icon { background-color: var(--color-green-light); }
+    .toast-error   .toast-icon { background-color: var(--color-red-light); }
+    .toast-info    .toast-icon { background-color: var(--brand-teal-light); }
+
+    .toast-icon svg { width: 16px; height: 16px; }
+    .toast-success .toast-icon svg { stroke: var(--color-green); }
+    .toast-error   .toast-icon svg { stroke: var(--color-red); }
+    .toast-info    .toast-icon svg { stroke: var(--brand-teal); }
+
+    .toast-body { flex: 1; line-height: 1.4; }
+    .toast-title { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+    .toast-msg   { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+
+    .toast-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 2px;
+      line-height: 1;
+      flex-shrink: 0;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .toast-close:hover { opacity: 1; }
+
+    .toast.toast-hide {
+      animation: toastSlideOut 0.25s ease forwards;
+    }
+
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateX(30px) scale(0.95); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes toastSlideOut {
+      from { opacity: 1; transform: translateX(0) scale(1); }
+      to   { opacity: 0; transform: translateX(30px) scale(0.95); }
+    }
   </style>
 </head>
 <body>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <script>
+    function showToast(message, type = 'success', duration = 3500) {
+      const icons = {
+        success: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+        error:   '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+        info:    '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>'
+      };
+      const titles = { success: 'Sucesso!', error: 'Erro', info: 'Informação' };
+
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `
+        <div class="toast-icon">${icons[type] || icons.info}</div>
+        <div class="toast-body">
+          <div class="toast-title">${titles[type] || 'Aviso'}</div>
+          <div class="toast-msg">${message}</div>
+        </div>
+        <button class="toast-close" onclick="this.closest('.toast').remove()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      `;
+
+      document.getElementById('toast-container').appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+  </script>
 
   <!-- LOGIN CONTAINER -->
   <div id="login-container" style="display: none; width: 100vw; height: 100vh; background-color: var(--bg-color); justify-content: center; align-items: center; font-family: var(--font-body); position: fixed; top: 0; left: 0; z-index: 9999;">
@@ -1462,7 +1580,7 @@
       btn.addEventListener("click", async function() {
         if (confirm("Deseja zerar todas as métricas e histórico da dashboard no Supabase?")) {
           const { error } = await sb.from("creamy_events").delete().neq("id", "");
-          if (error) alert("Erro ao limpar dados: " + error.message);
+          if (error) showToast("Erro ao limpar dados: " + error.message, 'error');
           else loadLocalMetrics();
         }
       });
@@ -1538,9 +1656,9 @@
         }
 
         const { error } = await sb.from("creamy_events").insert(mockData);
-        if (error) alert("Erro ao gerar métricas: " + error.message);
+        if (error) showToast("Erro ao gerar métricas: " + error.message, 'error');
         else {
-          alert("Métricas simuladas inseridas com sucesso no Supabase!");
+          showToast("Métricas simuladas inseridas com sucesso!", 'success');
           loadLocalMetrics();
         }
       });
@@ -1590,7 +1708,7 @@
             btnCopyUtm.style.color = "";
           }, 2000);
         } catch(err) {
-          alert("Não foi possível copiar automaticamente. Selecione o texto e copie manualmente.");
+          showToast("Não foi possível copiar automaticamente. Selecione o texto e copie manualmente.", 'info');
         }
       });
     }
@@ -1666,9 +1784,9 @@
           .eq("id", 1);
         
         if (error) throw error;
-        alert("Configurações de pixels salvas no Supabase!");
+        showToast("Configurações de pixels salvas com sucesso!", 'success');
       } catch(e) {
-        alert("Erro ao salvar pixels: " + e.message);
+        showToast("Erro ao salvar pixels: " + e.message, 'error');
       }
     });
 
@@ -1684,9 +1802,9 @@
         
         if (error) throw error;
         updateGatewayStatusBadge(client_id);
-        alert("Integração com o Gateway de Pagamento salva no Supabase!");
+        showToast("Integração com o Gateway de Pagamento salva!", 'success');
       } catch(e) {
-        alert("Erro ao salvar gateway: " + e.message);
+        showToast("Erro ao salvar gateway: " + e.message, 'error');
       }
     });
 
@@ -1722,9 +1840,9 @@
           .eq("id", 1);
         
         if (error) throw error;
-        alert("Regras de proteção do Cloaker salvas no Supabase!");
+        showToast("Regras de proteção do Cloaker salvas!", 'success');
       } catch(e) {
-        alert("Erro ao salvar regras do cloaker: " + e.message);
+        showToast("Erro ao salvar regras do cloaker: " + e.message, 'error');
       }
     });
 
@@ -1787,7 +1905,7 @@
       btnClearCloakerLogs.addEventListener("click", async function() {
         if (confirm("Deseja limpar todos os logs de acesso do cloaker?")) {
           const { error } = await sb.from("creamy_cloaker_logs").delete().neq("id", "");
-          if (error) alert("Erro ao limpar logs: " + error.message);
+          if (error) showToast("Erro ao limpar logs: " + error.message, 'error');
           else loadCloakerLogs();
         }
       });
@@ -1800,7 +1918,7 @@
           const { error } = await sb.from("creamy_cloaker_stats")
             .update({ meta: 0, google: 0, tiktok: 0, other: 0, real: 0 })
             .eq("id", 1);
-          if (error) alert("Erro ao resetar estatísticas: " + error.message);
+          if (error) showToast("Erro ao resetar estatísticas: " + error.message, 'error');
           else loadCloakerStats();
         }
       });
