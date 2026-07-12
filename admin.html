@@ -694,6 +694,24 @@
       from { opacity: 1; transform: translateX(0) scale(1); }
       to   { opacity: 0; transform: translateX(30px) scale(0.95); }
     }
+
+    /* MARCADOR DE EVENTO AO VIVO (ping extra-forte) */
+    .pulse-marker-live {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      cursor: pointer;
+      animation: pulse-live 1s ease-out 3;
+    }
+    .pulse-marker-live.live-visit    { background-color: var(--brand-teal); }
+    .pulse-marker-live.live-purchase { background-color: var(--brand-coral); }
+    .pulse-marker-live.live-shipping { background-color: #787878; }
+    @keyframes pulse-live {
+      0%   { transform: scale(1);   box-shadow: 0 0 0 0 rgba(0,186,231,0.9); }
+      50%  { transform: scale(1.4); box-shadow: 0 0 0 14px rgba(0,186,231,0); }
+      100% { transform: scale(1);   box-shadow: 0 0 0 0 rgba(0,186,231,0); }
+    }
   </style>
 </head>
 <body>
@@ -1290,18 +1308,16 @@
     let map;
     let activeMarkers = [];
 
-    // Coordenadas das capitais brasileiras para geolocalização
+    // Coordenadas por cidade/estado para fallback
     const cityCoordinates = {
-      "SP": [-46.6333, -23.5505], // São Paulo
-      "RJ": [-43.1729, -22.9068], // Rio de Janeiro
-      "MG": [-43.9345, -19.9191], // Belo Horizonte
-      "PR": [-49.2731, -25.4284], // Curitiba
-      "RS": [-51.2177, -30.0346], // Porto Alegre
-      "DF": [-47.8828, -15.7938], // Brasília
-      "BA": [-38.5016, -12.9714], // Salvador
-      "PE": [-34.8778, -8.0578],  // Recife
-      "CE": [-38.5267, -3.7319]   // Fortaleza
+      "SP": [-46.6333, -23.5505], "RJ": [-43.1729, -22.9068], "MG": [-43.9345, -19.9191],
+      "PR": [-49.2731, -25.4284], "RS": [-51.2177, -30.0346], "SC": [-48.5482, -27.5969],
+      "DF": [-47.8828, -15.7938], "GO": [-49.2539, -16.6864], "MT": [-56.0977, -15.5989],
+      "MS": [-54.6462, -20.4428], "BA": [-38.5016, -12.9714], "PE": [-34.8778, -8.0578],
+      "CE": [-38.5267, -3.7319],  "MA": [-44.3068, -2.5369],  "PA": [-48.4902, -1.4558],
+      "AM": [-60.0212, -3.1019],  "RJ_city": [-43.1729, -22.9068], "ES": [-40.3128, -19.1834]
     };
+    const fallbackCities = Object.values(cityCoordinates);
 
     function initMap() {
       try {
@@ -1323,73 +1339,99 @@
       }
     }
 
+    // ---- Geo helpers ----
+    function evCoords(ev, index) {
+      // 1. Coordenadas reais salvas pelo visitor (via ipapi.co no index.html)
+      const utm = ev.utm || {};
+      if (utm.geo_lat && utm.geo_lng) {
+        const j = () => (Math.random() - 0.5) * 0.08;
+        return [parseFloat(utm.geo_lng) + j(), parseFloat(utm.geo_lat) + j()];
+      }
+      // 2. Fallback: CEP-based lookup para eventos de frete
+      if (ev.type === "shipping" && ev.detail) {
+        const cepMatch = ev.detail.match(/\d{5}-?\d{3}|\d{8}/);
+        if (cepMatch) {
+          const cep = cepMatch[0].replace(/\D/g, "");
+          const d = cep[0];
+          const map_cep = { "0": "SP", "1": "SP", "2": "RJ", "3": "MG", "4": "BA",
+                            "5": "PE", "6": "CE", "8": "PR", "9": "RS" };
+          let key = map_cep[d] || "DF";
+          if (d === "7") key = (cep.startsWith("70") || cep.startsWith("71") || cep.startsWith("72")) ? "DF" : "GO";
+          const base = cityCoordinates[key] || fallbackCities[0];
+          return [base[0] + (Math.random()-0.5)*0.5, base[1] + (Math.random()-0.5)*0.5];
+        }
+      }
+      // 3. Fallback final: rotação entre cidades reais
+      const base = fallbackCities[index % fallbackCities.length];
+      return [base[0] + (Math.random()-0.5)*1.2, base[1] + (Math.random()-0.5)*1.2];
+    }
+
+    function makeMarkerEl(ev, isNew = false) {
+      const el = document.createElement('div');
+      if (isNew) {
+        el.className = `pulse-marker-live live-${ev.type}`;
+        // Após 3 pulsos (~3s), vira o marker padrão
+        setTimeout(() => {
+          if (ev.type === 'visit')    el.className = 'pulse-marker-visit';
+          else if (ev.type === 'purchase') el.className = 'pulse-marker-purchase';
+          else                        el.className = 'pulse-marker-shipping';
+        }, 3200);
+      } else {
+        if (ev.type === "visit")     el.className = 'pulse-marker-visit';
+        else if (ev.type === "purchase") el.className = 'pulse-marker-purchase';
+        else                         el.className = 'pulse-marker-shipping';
+      }
+      return el;
+    }
+
+    function makePopup(ev) {
+      const date = new Date(ev.timestamp);
+      const timeStr = date.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+      const titles = { visit: "Visualização de Página", purchase: "Venda Realizada", shipping: "Simulação de Frete" };
+      const utm = ev.utm || {};
+      const city = utm.geo_city ? `<span style="color:var(--brand-teal);font-weight:700">${utm.geo_city}</span><br/>` : '';
+      return new maplibregl.Popup({ offset: 10 }).setHTML(`
+        <div style="font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;min-width:140px">
+          <strong style="color:var(--brand-navy);font-family:var(--font-title);font-size:12px;display:block;margin-bottom:4px">${titles[ev.type] || 'Evento'}</strong>
+          ${city}
+          <span style="color:var(--text-muted)">${ev.detail || ''}</span><br/>
+          <span style="color:var(--text-muted);font-size:10px;margin-top:4px;display:block">⏱ ${timeStr}</span>
+        </div>`);
+    }
+
     function renderMapMarkers(events) {
       if (!map) return;
       activeMarkers.forEach(m => m.remove());
       activeMarkers = [];
-      if (!events) return;
-
-      const cities = Object.keys(cityCoordinates);
+      if (!events || !events.length) return;
 
       events.forEach((ev, index) => {
         if (ev.type === "newsletter") return;
-
-        let coords = null;
-        if (ev.type === "shipping" && ev.detail) {
-          const cepMatch = ev.detail.match(/\d{5}-\d{3}|\d{8}/);
-          if (cepMatch) {
-            const cep = cepMatch[0].replace(/\D/g, "");
-            const firstDigit = cep[0];
-            if (firstDigit === "0" || firstDigit === "1") coords = cityCoordinates["SP"];
-            else if (firstDigit === "2") coords = cityCoordinates["RJ"];
-            else if (firstDigit === "3") coords = cityCoordinates["MG"];
-            else if (firstDigit === "4") coords = cityCoordinates["BA"];
-            else if (firstDigit === "5" || firstDigit === "6") coords = cityCoordinates["PE"];
-            else if (firstDigit === "8") coords = cityCoordinates["PR"];
-            else if (firstDigit === "9") coords = cityCoordinates["RS"];
-            else if (firstDigit === "7") {
-              if (cep.startsWith("70") || cep.startsWith("71") || cep.startsWith("72")) coords = cityCoordinates["DF"];
-              else coords = cityCoordinates["CE"];
-            }
-          }
-        }
-
-        if (!coords) {
-          const cityKey = cities[index % cities.length];
-          coords = cityCoordinates[cityKey];
-        }
-
-        const jitterX = (Math.random() - 0.5) * 0.4;
-        const jitterY = (Math.random() - 0.5) * 0.4;
-        const finalCoords = [coords[0] + jitterX, coords[1] + jitterY];
-
-        const el = document.createElement('div');
-        if (ev.type === "visit") el.className = 'pulse-marker-visit';
-        else if (ev.type === "purchase") el.className = 'pulse-marker-purchase';
-        else if (ev.type === "shipping") el.className = 'pulse-marker-shipping';
-
-        const date = new Date(ev.timestamp);
-        const timeStr = date.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
-        
-        let title = "Visualização de Página";
-        if (ev.type === "purchase") title = "Venda Realizada";
-        else if (ev.type === "shipping") title = "Simulação de Frete";
-
-        const popup = new maplibregl.Popup({ offset: 10 }).setHTML(`
-          <div style="font-family: 'Montserrat', sans-serif; font-size: 11px; line-height: 1.4;">
-            <strong style="color: var(--brand-navy); font-family: var(--font-title); font-size: 12px; display: block; margin-bottom: 4px;">${title}</strong>
-            <span>${ev.detail}</span><br/>
-            <span style="color: var(--text-muted); font-size: 10px; margin-top: 4px; display: block;">Hora: ${timeStr}</span>
-          </div>
-        `);
-
+        const finalCoords = evCoords(ev, index);
+        const el = makeMarkerEl(ev, false);
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat(finalCoords)
-          .setPopup(popup)
+          .setPopup(makePopup(ev))
           .addTo(map);
-
         activeMarkers.push(marker);
       });
+    }
+
+    // Adiciona UM único marker ao vivo sem limpar os existentes
+    function addRealtimeMarker(ev) {
+      if (!map || !ev || ev.type === "newsletter") return;
+      const finalCoords = evCoords(ev, activeMarkers.length);
+      const el = makeMarkerEl(ev, true);
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat(finalCoords)
+        .setPopup(makePopup(ev))
+        .addTo(map);
+      activeMarkers.push(marker);
+      // Limita a 200 markers no mapa
+      if (activeMarkers.length > 200) {
+        activeMarkers[0].remove();
+        activeMarkers.shift();
+      }
     }
 
     // ==========================================
@@ -1924,21 +1966,67 @@
       });
     }
 
+    // Contadores incrementais para KPI (sem refetch)
+    let _rtVisits = 0, _rtPurchases = 0, _rtRevenue = 0;
+
     function initRealtime() {
       sb.channel('realtime_events')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_events' }, payload => {
-          loadLocalMetrics();
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creamy_events' }, payload => {
+          const ev = payload.new;
+          if (!ev) return;
+
+          // Atualiza mapa incrementalmente (sem recarregar tudo)
+          addRealtimeMarker(ev);
+
+          // Atualiza KPIs incrementalmente
+          if (ev.type === 'visit')    _rtVisits++;
+          if (ev.type === 'purchase') { _rtPurchases++; _rtRevenue += parseFloat(ev.value) || 0; }
+
+          // Recalcula e exibe KPIs baseado nos totais atuais
+          const curVisits    = parseInt(kpiVisits.innerText)    || 0;
+          const curPurchases = parseInt(kpiPurchases.innerText) || 0;
+          const curRevStr    = kpiRevenue.innerText.replace(/[^0-9,]/g,'').replace(',','.');
+          const curRevenue   = parseFloat(curRevStr) || 0;
+
+          updateKPIs(
+            curVisits    + (ev.type === 'visit' ? 1 : 0),
+            curPurchases + (ev.type === 'purchase' ? 1 : 0),
+            curRevenue   + (ev.type === 'purchase' ? (parseFloat(ev.value)||0) : 0)
+          );
+
+          // Prepend nova linha na tabela de eventos sem reload
+          if (eventsBody) {
+            const date    = new Date(ev.timestamp);
+            const timeStr = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            const badges  = { visit:'badge-blue', purchase:'badge-green', shipping:'badge-grey', newsletter:'badge-red' };
+            const labels  = { visit:'Visita', purchase:'Compra', shipping:'Frete', newsletter:'Newsletter' };
+            const valStr  = ev.value > 0 ? 'R$ ' + parseFloat(ev.value).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '-';
+            const newRow  = document.createElement('tr');
+            newRow.style.animation = 'fadeIn 0.4s ease';
+            newRow.innerHTML = `
+              <td style="color:var(--text-muted);font-size:12px">${timeStr}</td>
+              <td><span class="badge ${badges[ev.type]||'badge-grey'}">${labels[ev.type]||ev.type}</span></td>
+              <td style="font-weight:500">${ev.detail||'-'}</td>
+              <td style="text-align:right;font-weight:bold;${ev.type==='purchase'?'color:var(--color-green)':''}">${valStr}</td>`;
+            // Remove o placeholder se existir
+            const placeholder = eventsBody.querySelector('td[colspan]');
+            if (placeholder) eventsBody.innerHTML = '';
+            eventsBody.insertBefore(newRow, eventsBody.firstChild);
+          }
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'creamy_events' }, () => {
+          loadLocalMetrics(); // Reload completo só quando dados são apagados
         })
         .subscribe();
 
       sb.channel('realtime_logs')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_cloaker_logs' }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_cloaker_logs' }, () => {
           loadCloakerLogs();
         })
         .subscribe();
 
       sb.channel('realtime_stats')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_cloaker_stats' }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_cloaker_stats' }, () => {
           loadCloakerStats();
         })
         .subscribe();
