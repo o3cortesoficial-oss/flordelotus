@@ -1340,9 +1340,15 @@
     }
 
     // ---- Geo helpers ----
+    function parseUtm(raw) {
+      if (!raw) return {};
+      if (typeof raw === 'string') { try { return JSON.parse(raw); } catch(e) { return {}; } }
+      return raw;
+    }
+
     function evCoords(ev, index) {
-      // 1. Coordenadas reais salvas pelo visitor (via ipapi.co no index.html)
-      const utm = ev.utm || {};
+      // 1. Coordenadas reais salvas pelo visitor (via ipinfo.io no index.html)
+      const utm = parseUtm(ev.utm);
       if (utm.geo_lat && utm.geo_lng) {
         const j = () => (Math.random() - 0.5) * 0.08;
         return [parseFloat(utm.geo_lng) + j(), parseFloat(utm.geo_lat) + j()];
@@ -1388,7 +1394,7 @@
       const date = new Date(ev.timestamp);
       const timeStr = date.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
       const titles = { visit: "Visualização de Página", purchase: "Venda Realizada", shipping: "Simulação de Frete" };
-      const utm = ev.utm || {};
+      const utm = parseUtm(ev.utm);
       const city = utm.geo_city ? `<span style="color:var(--brand-teal);font-weight:700">${utm.geo_city}</span><br/>` : '';
       return new maplibregl.Popup({ offset: 10 }).setHTML(`
         <div style="font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;min-width:140px">
