@@ -17,6 +17,9 @@
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <style>
     :root {
       --bg-color: #f5f7fa; /* Cinza-azul claro limpo, padrão clínico da Creamy */
@@ -624,8 +627,8 @@
       
       <form id="login-form" style="width: 100%;">
         <div class="form-group" style="margin-bottom: 15px;">
-          <label class="form-label" for="login-username">Usuário</label>
-          <input class="form-input" id="login-username" type="text" placeholder="Ex: admin" required style="border-radius: 8px; width: 100%;">
+          <label class="form-label" for="login-username">E-mail</label>
+          <input class="form-input" id="login-username" type="email" placeholder="Ex: admin@email.com" required style="border-radius: 8px; width: 100%;">
         </div>
         
         <div class="form-group" style="margin-bottom: 20px;">
@@ -1114,15 +1117,14 @@
           </div>
           
           <div style="display: flex; flex-direction: column; gap: 10px; font-size: 11px; font-family: monospace; max-height: 520px; overflow-y: auto;" id="cloaker-logs">
-            <div style="text-align: center; color: var(--text-muted); padding: 20px 0;">Nenhum acesso de proteção registrado.</div>
-          </div>
-        </div>
-      </div>
-    </div>
+            <div style="text-align: center; color: var(--text-muted); padding: 20px 0;">Nenhum acesso de p  <script>
+    // ==========================================
+    // 0. SUPABASE CLIENT INITIALIZATION
+    // ==========================================
+    const SUPABASE_URL = "https://nlawvbnenzyjknmsqlwa.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sYXd2Ym5lbnp5amtubXNxbHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjg3NTcsImV4cCI6MjA5MTg0NDc1N30.gEr2isb_ibqpFQBXpPDcqai0_szbE3bucOt-oiqv0Uo";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  </main>
-
-  <script>
     // ==========================================
     // 1. SISTEMA DE SELEÇÃO DE ABAS (SIDEBAR)
     // ==========================================
@@ -1132,11 +1134,11 @@
     const mainSubtitle = document.getElementById("main-subtitle");
 
     const tabDescriptions = {
-      dash: { title: "Dashboard", subtitle: "Acompanhe as métricas de tráfego, vendas e geolocalização local." },
-      vendas: { title: "Vendas & Leads", subtitle: "Visualização detalhada dos pedidos, CEPs e e-mails de leads capturados." },
+      dash: { title: "Dashboard", subtitle: "Acompanhe as métricas de tráfego, vendas e geolocalização no Supabase." },
+      vendas: { title: "Vendas & Leads", subtitle: "Visualização detalhada dos pedidos, CEPs e e-mails de leads no Supabase." },
       pixel: { title: "Pixel e UTM", subtitle: "Configure pixels de anúncios e gere links parametrizados." },
       gateway: { title: "Gateway & Pix", subtitle: "Administre credenciais do gateway de pagamentos e chaves de PIX." },
-      protect: { title: "Protect (Cloaker)", subtitle: "Filtre tráfego indesejado, robôs e revisores de anúncios de forma automatizada." }
+      protect: { title: "Protect (Cloaker)", subtitle: "Filtre tráfego indesejado, robôs e revisores de anúncios no Supabase." }
     };
 
     menuItems.forEach(item => {
@@ -1157,7 +1159,7 @@
           mainSubtitle.innerText = tabDescriptions[tab].subtitle;
         }
 
-        // Se trocar para a aba Dashboard, redimensionar mapa para corrigir problemas de layout do MapLibre
+        // Se trocar para a aba Dashboard, redimensionar mapa
         if (tab === "dash" && map) {
           setTimeout(() => { map.resize(); }, 150);
         }
@@ -1170,7 +1172,7 @@
     let map;
     let activeMarkers = [];
 
-    // Coordenadas das capitais brasileiras para mock/real-time geoloc
+    // Coordenadas das capitais brasileiras para geolocalização
     const cityCoordinates = {
       "SP": [-46.6333, -23.5505], // São Paulo
       "RJ": [-43.1729, -22.9068], // Rio de Janeiro
@@ -1187,47 +1189,39 @@
       try {
         map = new maplibregl.Map({
           container: 'map',
-          style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json', // Estilo de mapa claro Carto
+          style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
           center: [-51.9253, -14.235], // Centro do Brasil
           zoom: 3.9
         });
         
-        // Adicionar botões de controle de zoom
         map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
         map.on('load', function() {
-          console.log("MapLibre carregado com sucesso!");
-          renderMapMarkers();
+          console.log("MapLibre carregado!");
+          loadLocalMetrics();
         });
       } catch (e) {
         console.error("Erro ao inicializar mapa:", e);
       }
     }
 
-    function renderMapMarkers() {
+    function renderMapMarkers(events) {
       if (!map) return;
-
-      // Remover todos os marcadores existentes
       activeMarkers.forEach(m => m.remove());
       activeMarkers = [];
+      if (!events) return;
 
-      const events = JSON.parse(localStorage.getItem("creamy_events") || "[]");
       const cities = Object.keys(cityCoordinates);
 
       events.forEach((ev, index) => {
-        // Ignorar newsletter no mapa para manter foco
         if (ev.type === "newsletter") return;
 
-        // Atribuir uma coordenada com base no CEP (se houver) ou distribuir pelas capitais
         let coords = null;
         if (ev.type === "shipping" && ev.detail) {
-          // Extrair CEP da string "Cálculo de frete para o CEP: 01311-200"
           const cepMatch = ev.detail.match(/\d{5}-\d{3}|\d{8}/);
           if (cepMatch) {
-            // Mapear CEPs fictícios ou reais a estados
             const cep = cepMatch[0].replace(/\D/g, "");
             const firstDigit = cep[0];
-            // Mapeamento simples de primeiro dígito de CEP a estado
             if (firstDigit === "0" || firstDigit === "1") coords = cityCoordinates["SP"];
             else if (firstDigit === "2") coords = cityCoordinates["RJ"];
             else if (firstDigit === "3") coords = cityCoordinates["MG"];
@@ -1242,28 +1236,20 @@
           }
         }
 
-        // Fallback para cidade rotativa se não mapeado
         if (!coords) {
           const cityKey = cities[index % cities.length];
           coords = cityCoordinates[cityKey];
         }
 
-        // Adicionar pequena variação aleatória para não sobrepor marcadores exatamente
         const jitterX = (Math.random() - 0.5) * 0.4;
         const jitterY = (Math.random() - 0.5) * 0.4;
         const finalCoords = [coords[0] + jitterX, coords[1] + jitterY];
 
-        // Criar elemento HTML personalizado para a animação CSS de pulso
         const el = document.createElement('div');
-        if (ev.type === "visit") {
-          el.className = 'pulse-marker-visit';
-        } else if (ev.type === "purchase") {
-          el.className = 'pulse-marker-purchase';
-        } else if (ev.type === "shipping") {
-          el.className = 'pulse-marker-shipping';
-        }
+        if (ev.type === "visit") el.className = 'pulse-marker-visit';
+        else if (ev.type === "purchase") el.className = 'pulse-marker-purchase';
+        else if (ev.type === "shipping") el.className = 'pulse-marker-shipping';
 
-        // Popup com informações do evento ao clicar no ponto
         const date = new Date(ev.timestamp);
         const timeStr = date.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
         
@@ -1289,7 +1275,7 @@
     }
 
     // ==========================================
-    // 3. EVENTOS DO LOCALSTORAGE E KPIS
+    // 3. EVENTOS DO SUPABASE E KPIS
     // ==========================================
     const eventsBody = document.getElementById("events-body");
     const btnClearEvents = document.querySelectorAll("#btn-clear-events");
@@ -1336,12 +1322,11 @@
             campaigns[key].visits++;
           } else if (ev.type === "purchase") {
             campaigns[key].purchases++;
-            campaigns[key].revenue += ev.value;
+            campaigns[key].revenue += parseFloat(ev.value) || 0;
           }
         });
         
         const campaignList = Object.values(campaigns);
-        // Ordenar por faturamento descendente
         campaignList.sort((a, b) => b.revenue - a.revenue);
         
         let html = "";
@@ -1372,18 +1357,23 @@
       }
     }
 
-    function loadLocalMetrics() {
+    async function loadLocalMetrics() {
       try {
-        const events = JSON.parse(localStorage.getItem("creamy_events") || "[]");
+        const { data: events, error } = await sb.from("creamy_events")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .limit(200);
         
-        if (events.length === 0) {
+        if (error) throw error;
+        
+        if (!events || events.length === 0) {
           eventsBody.innerHTML = `
             <tr>
               <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px 0;">Nenhum evento registrado ainda. Navegue na página de vendas para gerar interações.</td>
             </tr>
           `;
           updateKPIs(0, 0, 0);
-          renderMapMarkers();
+          renderMapMarkers([]);
           const campaignsBody = document.getElementById("campaigns-body");
           if (campaignsBody) {
             campaignsBody.innerHTML = `
@@ -1404,7 +1394,7 @@
           if (ev.type === "visit") visitsCount++;
           if (ev.type === "purchase") {
             purchaseCount++;
-            totalRevenue += ev.value;
+            totalRevenue += parseFloat(ev.value) || 0;
           }
 
           const date = new Date(ev.timestamp);
@@ -1417,16 +1407,15 @@
           else if (ev.type === "shipping") { badgeClass = "badge-grey"; badgeText = "Frete"; }
           else if (ev.type === "newsletter") { badgeClass = "badge-red"; badgeText = "Newsletter"; }
 
-          const valStr = ev.value > 0 ? "R$ " + ev.value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-";
+          const valStr = ev.value > 0 ? "R$ " + parseFloat(ev.value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-";
 
-          // Renderizar badges UTM se existirem no evento
           let utmHtml = "";
           if (ev.utm) {
             utmHtml = `
               <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
-                <span class="badge badge-grey" style="font-size: 9px; padding: 2px 6px; background-color: #eaeaea; color: #555;">src: ${ev.utm.source}</span>
-                <span class="badge badge-grey" style="font-size: 9px; padding: 2px 6px; background-color: #eaeaea; color: #555;">med: ${ev.utm.medium}</span>
-                <span class="badge badge-grey" style="font-size: 9px; padding: 2px 6px; background-color: #eaeaea; color: #555;">cam: ${ev.utm.campaign}</span>
+                <span class="badge badge-grey" style="font-size: 9px; padding: 2px 6px; background-color: #eaeaea; color: #555;">src: ${ev.utm.source || ''}</span>
+                <span class="badge badge-grey" style="font-size: 9px; padding: 2px 6px; background-color: #eaeaea; color: #555;">med: ${ev.utm.medium || ''}</span>
+                <span class="badge badge-grey" style="font-size: 9px; padding: 2px 6px; background-color: #eaeaea; color: #555;">cam: ${ev.utm.campaign || ''}</span>
               </div>
             `;
           }
@@ -1446,7 +1435,7 @@
 
         eventsBody.innerHTML = html;
         updateKPIs(visitsCount, purchaseCount, totalRevenue);
-        renderMapMarkers();
+        renderMapMarkers(events);
         renderCampaignTable(events);
       } catch (e) {
         console.error("Erro ao ler eventos:", e);
@@ -1461,7 +1450,6 @@
       const cr = visits > 0 ? (purchases / visits) * 100 : 0;
       kpiCr.innerText = cr.toFixed(2) + "%";
 
-      // Ad spend fixado em R$ 150 para fins demonstrativos de ROI/ROAS no painel
       const investment = 150;
       const roas = investment > 0 ? (revenue / investment) : 0;
       const cpa = purchases > 0 ? (investment / purchases) : 0;
@@ -1470,25 +1458,19 @@
       kpiCpa.innerText = purchases > 0 ? "R$ " + cpa.toFixed(2) : "R$ 0,00";
     }
 
-    // Sincronismo entre abas
-    window.addEventListener("creamy_event_added", loadLocalMetrics);
-    window.addEventListener("storage", function(e) {
-      if (e.key === "creamy_events") {
-        loadLocalMetrics();
-      }
-    });
-
     btnClearEvents.forEach(btn => {
-      btn.addEventListener("click", function() {
-        if (confirm("Deseja zerar todas as métricas e histórico da dashboard?")) {
-          localStorage.removeItem("creamy_events");
-          loadLocalMetrics();
+      btn.addEventListener("click", async function() {
+        if (confirm("Deseja zerar todas as métricas e histórico da dashboard no Supabase?")) {
+          const { error } = await sb.from("creamy_events").delete().neq("id", "");
+          if (error) alert("Erro ao limpar dados: " + error.message);
+          else loadLocalMetrics();
         }
       });
     });
 
     btnMockEvents.forEach(btn => {
-      btn.addEventListener("click", function() {
+      btn.addEventListener("click", async function() {
+        if (!confirm("Deseja gerar métricas de teste no Supabase?")) return;
         const now = new Date();
         const mockData = [];
         const totalVisits = 65;
@@ -1505,7 +1487,7 @@
           const timeOffset = Math.random() * 24 * 60 * 60 * 1000;
           const randomUtm = mockUtms[Math.floor(Math.random() * mockUtms.length)];
           const item = {
-            id: "mock_" + i,
+            id: "mock_" + i + "_" + Math.random().toString(36).substr(2, 5),
             timestamp: new Date(now - timeOffset).toISOString(),
             type: "visit",
             detail: "Acesso à página do Kit Firmador (Simulado)",
@@ -1520,7 +1502,7 @@
           const ceps = ["01311-200", "22021-001", "80020-100", "90020-009", "30140-061", "40020-100", "50020-100", "70020-100"];
           const randomCep = ceps[Math.floor(Math.random() * ceps.length)];
           mockData.push({
-            id: "mock_cep_" + i,
+            id: "mock_cep_" + i + "_" + Math.random().toString(36).substr(2, 5),
             timestamp: new Date(now - timeOffset).toISOString(),
             type: "shipping",
             detail: "Cálculo de frete para o CEP: " + randomCep + " (Simulado)",
@@ -1532,7 +1514,7 @@
           const timeOffset = Math.random() * 24 * 60 * 60 * 1000;
           const emails = ["comprador@email.com", "sucesso@trafego.com", "lead1@gmail.com", "vendas@loja.com"];
           mockData.push({
-            id: "mock_news_" + i,
+            id: "mock_news_" + i + "_" + Math.random().toString(36).substr(2, 5),
             timestamp: new Date(now - timeOffset).toISOString(),
             type: "newsletter",
             detail: "Cadastro de newsletter: " + emails[i] + " (Simulado)",
@@ -1543,9 +1525,9 @@
         for (let i = 0; i < totalPurchases; i++) {
           const timeOffset = Math.random() * 24 * 60 * 60 * 1000;
           const qty = Math.floor(Math.random() * 2) + 1;
-          const randomUtm = mockUtms[Math.floor(Math.random() * (mockUtms.length - 1))]; // Garantir UTM em compras de teste
+          const randomUtm = mockUtms[Math.floor(Math.random() * (mockUtms.length - 1))];
           const purchaseItem = {
-            id: "mock_purch_" + i,
+            id: "mock_purch_" + i + "_" + Math.random().toString(36).substr(2, 5),
             timestamp: new Date(now - timeOffset).toISOString(),
             type: "purchase",
             detail: `Clique em Comprar - ${qty}x Kit Firmador (Simulado)`,
@@ -1555,10 +1537,12 @@
           mockData.push(purchaseItem);
         }
 
-        mockData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        localStorage.setItem("creamy_events", JSON.stringify(mockData));
-        loadLocalMetrics();
-        alert("Métricas simuladas com UTMs inseridas com sucesso no mapa e na tabela!");
+        const { error } = await sb.from("creamy_events").insert(mockData);
+        if (error) alert("Erro ao gerar métricas: " + error.message);
+        else {
+          alert("Métricas simuladas inseridas com sucesso no Supabase!");
+          loadLocalMetrics();
+        }
       });
     });
 
@@ -1593,7 +1577,7 @@
       btnCopyUtm.addEventListener("click", function() {
         generateUtmUrl();
         utmOutput.select();
-        utmOutput.setSelectionRange(0, 99999); // Para dispositivos móveis
+        utmOutput.setSelectionRange(0, 99999);
         try {
           navigator.clipboard.writeText(utmOutput.value);
           const originalText = btnCopyUtm.innerText;
@@ -1616,54 +1600,45 @@
     });
 
     // ==========================================
-    // 5. CARGA E SALVAMENTO DE CONFIGURAÇÕES LOCAIS
+    // 5. CARGA E SALVAMENTO DE CONFIGURAÇÕES LOCAIS (SUPABASE)
     // ==========================================
-    function loadConfigurations() {
+    async function loadConfigurations() {
       try {
         // 5.1 Carregar Pixels
-        const pixels = JSON.parse(localStorage.getItem("creamy_pixel_config") || "{}");
-        if (pixels.metaId) document.getElementById("meta-pixel").value = pixels.metaId;
-        if (pixels.gtmId) document.getElementById("gtm-id").value = pixels.gtmId;
-        if (pixels.tiktokId) document.getElementById("tiktok-pixel").value = pixels.tiktokId;
+        const { data: pixels } = await sb.from("creamy_pixel_config").select("*").eq("id", 1).single();
+        if (pixels) {
+          if (pixels.meta_id) document.getElementById("meta-pixel").value = pixels.meta_id;
+          if (pixels.gtm_id) document.getElementById("gtm-id").value = pixels.gtm_id;
+          if (pixels.tiktok_id) document.getElementById("tiktok-pixel").value = pixels.tiktok_id;
+        }
 
         // 5.2 Carregar Gateway
-        const gateway = JSON.parse(localStorage.getItem("creamy_gateway_config") || "{}");
-        if (gateway.provider) document.getElementById("gateway-provider").value = gateway.provider;
-        if (gateway.clientId) document.getElementById("gateway-client-id").value = gateway.clientId;
-        if (gateway.clientSecret) document.getElementById("gateway-client-secret").value = gateway.clientSecret;
-        
-        updateGatewayStatusBadge(gateway.clientId);
+        const { data: gateway } = await sb.from("creamy_gateway_config").select("*").eq("id", 1).single();
+        if (gateway) {
+          if (gateway.provider) document.getElementById("gateway-provider").value = gateway.provider;
+          if (gateway.client_id) document.getElementById("gateway-client-id").value = gateway.client_id;
+          if (gateway.client_secret) document.getElementById("gateway-client-secret").value = gateway.client_secret;
+          updateGatewayStatusBadge(gateway.client_id);
+        }
 
         // 5.3 Carregar Cloaker
-        const cloaker = JSON.parse(localStorage.getItem("creamy_cloaker_config") || "{}");
-        if (cloaker.enabled !== undefined) {
-          document.getElementById("toggle-cloaker").checked = cloaker.enabled;
-        } else {
-          document.getElementById("toggle-cloaker").checked = true; // default
-        }
-        if (cloaker.safeUrl) {
-          document.getElementById("safe-url").value = cloaker.safeUrl;
-        } else {
-          document.getElementById("safe-url").value = window.location.origin + "/artigo-skincare-cuidados.html";
-        }
-        if (cloaker.moneyUrl) {
-          document.getElementById("money-url").value = cloaker.moneyUrl;
-        } else {
-          document.getElementById("money-url").value = window.location.origin + "/index.html";
-        }
-        if (cloaker.blockVpn) document.getElementById("cloaker-block-vpn").value = cloaker.blockVpn;
-        if (cloaker.geofilter) document.getElementById("cloaker-geofilter").value = cloaker.geofilter;
+        const { data: cloaker } = await sb.from("creamy_cloaker_config").select("*").eq("id", 1).single();
+        if (cloaker) {
+          document.getElementById("toggle-cloaker").checked = !!cloaker.enabled;
+          document.getElementById("safe-url").value = cloaker.safe_url || "";
+          document.getElementById("money-url").value = cloaker.money_url || "";
+          if (cloaker.block_vpn) document.getElementById("cloaker-block-vpn").value = cloaker.block_vpn;
+          if (cloaker.geofilter) document.getElementById("cloaker-geofilter").value = cloaker.geofilter;
 
-        // Novos campos do Cloaker
-        document.getElementById("cloaker-block-meta").checked = cloaker.blockMeta !== false; // default true
-        document.getElementById("cloaker-block-google").checked = cloaker.blockGoogle !== false; // default true
-        document.getElementById("cloaker-block-tiktok").checked = cloaker.blockTikTok !== false; // default true
-        document.getElementById("cloaker-block-desktop").checked = !!cloaker.blockDesktop; // default false
-        document.getElementById("cloaker-block-mobile").checked = !!cloaker.blockMobile; // default false
-        document.getElementById("cloaker-blacklist-ips").value = cloaker.blacklistIPs || "";
-
+          document.getElementById("cloaker-block-meta").checked = cloaker.block_meta !== false;
+          document.getElementById("cloaker-block-google").checked = cloaker.block_google !== false;
+          document.getElementById("cloaker-block-tiktok").checked = cloaker.block_tiktok !== false;
+          document.getElementById("cloaker-block-desktop").checked = !!cloaker.block_desktop;
+          document.getElementById("cloaker-block-mobile").checked = !!cloaker.block_mobile;
+          document.getElementById("cloaker-blacklist-ips").value = cloaker.blacklist_ips || "";
+        }
       } catch(e) {
-        console.error("Erro ao carregar configurações salvas:", e);
+        console.error("Erro ao carregar configurações do Supabase:", e);
       }
     }
 
@@ -1680,103 +1655,107 @@
       }
     }
 
-    // Handlers para salvar
-    document.getElementById("btn-save-pixels").addEventListener("click", function() {
+    document.getElementById("btn-save-pixels").addEventListener("click", async function() {
       try {
-        const metaId = document.getElementById("meta-pixel").value.trim();
-        const gtmId = document.getElementById("gtm-id").value.trim();
-        const tiktokId = document.getElementById("tiktok-pixel").value.trim();
+        const meta_id = document.getElementById("meta-pixel").value.trim();
+        const gtm_id = document.getElementById("gtm-id").value.trim();
+        const tiktok_id = document.getElementById("tiktok-pixel").value.trim();
         
-        const pixels = { metaId, gtmId, tiktokId };
-        localStorage.setItem("creamy_pixel_config", JSON.stringify(pixels));
+        const { error } = await sb.from("creamy_pixel_config")
+          .update({ meta_id, gtm_id, tiktok_id })
+          .eq("id", 1);
         
-        // Notificar outras abas para que a index.html possa ler a alteração e injetar na hora
-        window.dispatchEvent(new Event("storage"));
-        
-        alert("Configurações de pixels salvas localmente!");
+        if (error) throw error;
+        alert("Configurações de pixels salvas no Supabase!");
       } catch(e) {
         alert("Erro ao salvar pixels: " + e.message);
       }
     });
 
-    document.getElementById("btn-save-gateway").addEventListener("click", function() {
+    document.getElementById("btn-save-gateway").addEventListener("click", async function() {
       try {
         const provider = document.getElementById("gateway-provider").value;
-        const clientId = document.getElementById("gateway-client-id").value.trim();
-        const clientSecret = document.getElementById("gateway-client-secret").value.trim();
+        const client_id = document.getElementById("gateway-client-id").value.trim();
+        const client_secret = document.getElementById("gateway-client-secret").value.trim();
         
-        const gateway = { provider, clientId, clientSecret };
-        localStorage.setItem("creamy_gateway_config", JSON.stringify(gateway));
+        const { error } = await sb.from("creamy_gateway_config")
+          .update({ provider, client_id, client_secret })
+          .eq("id", 1);
         
-        updateGatewayStatusBadge(clientId);
-        alert("Integração com o Gateway de Pagamento salva!");
+        if (error) throw error;
+        updateGatewayStatusBadge(client_id);
+        alert("Integração com o Gateway de Pagamento salva no Supabase!");
       } catch(e) {
         alert("Erro ao salvar gateway: " + e.message);
       }
     });
 
-    document.getElementById("btn-save-cloaker").addEventListener("click", function() {
+    document.getElementById("btn-save-cloaker").addEventListener("click", async function() {
       try {
         const enabled = document.getElementById("toggle-cloaker").checked;
-        const safeUrl = document.getElementById("safe-url").value.trim();
-        const moneyUrl = document.getElementById("money-url").value.trim();
-        const blockVpn = document.getElementById("cloaker-block-vpn").value;
+        const safe_url = document.getElementById("safe-url").value.trim();
+        const money_url = document.getElementById("money-url").value.trim();
+        const block_vpn = document.getElementById("cloaker-block-vpn").value;
         const geofilter = document.getElementById("cloaker-geofilter").value;
         
-        // Novos campos do Cloaker
-        const blockMeta = document.getElementById("cloaker-block-meta").checked;
-        const blockGoogle = document.getElementById("cloaker-block-google").checked;
-        const blockTikTok = document.getElementById("cloaker-block-tiktok").checked;
-        const blockDesktop = document.getElementById("cloaker-block-desktop").checked;
-        const blockMobile = document.getElementById("cloaker-block-mobile").checked;
-        const blacklistIPs = document.getElementById("cloaker-blacklist-ips").value.trim();
+        const block_meta = document.getElementById("cloaker-block-meta").checked;
+        const block_google = document.getElementById("cloaker-block-google").checked;
+        const block_tiktok = document.getElementById("cloaker-block-tiktok").checked;
+        const block_desktop = document.getElementById("cloaker-block-desktop").checked;
+        const block_mobile = document.getElementById("cloaker-block-mobile").checked;
+        const blacklist_ips = document.getElementById("cloaker-blacklist-ips").value.trim();
 
-        const cloaker = { 
-          enabled, 
-          safeUrl, 
-          moneyUrl, 
-          blockVpn, 
-          geofilter,
-          blockMeta,
-          blockGoogle,
-          blockTikTok,
-          blockDesktop,
-          blockMobile,
-          blacklistIPs
-        };
-        localStorage.setItem("creamy_cloaker_config", JSON.stringify(cloaker));
+        const { error } = await sb.from("creamy_cloaker_config")
+          .update({ 
+            enabled, 
+            safe_url, 
+            money_url, 
+            block_vpn, 
+            geofilter,
+            block_meta,
+            block_google,
+            block_tiktok,
+            block_desktop,
+            block_mobile,
+            blacklist_ips
+          })
+          .eq("id", 1);
         
-        // Notificar outras abas para que a index.html possa ler a alteração e injetar na hora
-        window.dispatchEvent(new Event("storage"));
-        
-        alert("Regras de proteção do Cloaker salvas localmente!");
+        if (error) throw error;
+        alert("Regras de proteção do Cloaker salvas no Supabase!");
       } catch(e) {
         alert("Erro ao salvar regras do cloaker: " + e.message);
       }
     });
 
     // ==========================================
-    // 6. LOGS E ESTATÍSTICAS DO CLOAKER (REAL-TIME RENDERING)
+    // 6. LOGS E ESTATÍSTICAS DO CLOAKER (SUPABASE)
     // ==========================================
     const cloakerLogsDiv = document.getElementById("cloaker-logs");
     
-    function loadCloakerStats() {
+    async function loadCloakerStats() {
       try {
-        const stats = JSON.parse(localStorage.getItem("creamy_cloaker_stats") || '{"meta":0,"google":0,"tiktok":0,"other":0}');
-        document.getElementById("kpi-bot-meta").innerText = stats.meta || 0;
-        document.getElementById("kpi-bot-google").innerText = stats.google || 0;
-        document.getElementById("kpi-bot-tiktok").innerText = stats.tiktok || 0;
-        document.getElementById("kpi-bot-other").innerText = stats.other || 0;
+        const { data: stats } = await sb.from("creamy_cloaker_stats").select("*").eq("id", 1).single();
+        if (stats) {
+          document.getElementById("kpi-bot-meta").innerText = stats.meta || 0;
+          document.getElementById("kpi-bot-google").innerText = stats.google || 0;
+          document.getElementById("kpi-bot-tiktok").innerText = stats.tiktok || 0;
+          document.getElementById("kpi-bot-other").innerText = stats.other || 0;
+        }
       } catch(e) {
         console.error("Erro ao carregar estatísticas do cloaker:", e);
       }
     }
 
-    function loadCloakerLogs() {
+    async function loadCloakerLogs() {
       try {
-        loadCloakerStats();
-        const logs = JSON.parse(localStorage.getItem("creamy_cloaker_logs") || "[]");
-        if (logs.length === 0) {
+        await loadCloakerStats();
+        const { data: logs } = await sb.from("creamy_cloaker_logs")
+          .select("*")
+          .order("timestamp", { ascending: false })
+          .limit(100);
+          
+        if (!logs || logs.length === 0) {
           cloakerLogsDiv.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px 0;">Nenhum acesso de proteção registrado.</div>`;
           return;
         }
@@ -1793,7 +1772,7 @@
             <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 6px;">
               <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span> ${log.ip} - ${log.location}<br/>
               <span style="color: var(--text-muted);">${log.reason} &bull; ${timeStr}${redirectionText}</span><br/>
-              <span style="color: #999; font-size: 10px;">UA: ${log.userAgent}</span>
+              <span style="color: #999; font-size: 10px;">UA: ${log.user_agent}</span>
             </div>
           `;
         });
@@ -1805,98 +1784,115 @@
 
     const btnClearCloakerLogs = document.getElementById("btn-clear-cloaker-logs");
     if (btnClearCloakerLogs) {
-      btnClearCloakerLogs.addEventListener("click", function() {
+      btnClearCloakerLogs.addEventListener("click", async function() {
         if (confirm("Deseja limpar todos os logs de acesso do cloaker?")) {
-          localStorage.removeItem("creamy_cloaker_logs");
-          loadCloakerLogs();
+          const { error } = await sb.from("creamy_cloaker_logs").delete().neq("id", "");
+          if (error) alert("Erro ao limpar logs: " + error.message);
+          else loadCloakerLogs();
         }
       });
     }
 
     const btnResetCloakerStats = document.getElementById("btn-reset-cloaker-stats");
     if (btnResetCloakerStats) {
-      btnResetCloakerStats.addEventListener("click", function() {
+      btnResetCloakerStats.addEventListener("click", async function() {
         if (confirm("Deseja zerar as estatísticas de acessos de bots?")) {
-          localStorage.setItem("creamy_cloaker_stats", JSON.stringify({ meta: 0, google: 0, tiktok: 0, other: 0 }));
-          loadCloakerStats();
+          const { error } = await sb.from("creamy_cloaker_stats")
+            .update({ meta: 0, google: 0, tiktok: 0, other: 0, real: 0 })
+            .eq("id", 1);
+          if (error) alert("Erro ao resetar estatísticas: " + error.message);
+          else loadCloakerStats();
         }
       });
     }
 
-    // Atualizar no storage listener
-    window.addEventListener("storage", function(e) {
-      if (e.key === "creamy_cloaker_logs") {
-        loadCloakerLogs();
-      }
-      if (e.key === "creamy_cloaker_stats") {
-        loadCloakerStats();
-      }
-    });    // ==========================================
-    // 7. SISTEMA DE LOGIN E SEGURANÇA
+    function initRealtime() {
+      sb.channel('realtime_events')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_events' }, payload => {
+          loadLocalMetrics();
+        })
+        .subscribe();
+
+      sb.channel('realtime_logs')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_cloaker_logs' }, payload => {
+          loadCloakerLogs();
+        })
+        .subscribe();
+
+      sb.channel('realtime_stats')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'creamy_cloaker_stats' }, payload => {
+          loadCloakerStats();
+        })
+        .subscribe();
+    }
+
+    // ==========================================
+    // 7. SISTEMA DE LOGIN E SEGURANÇA (SUPABASE AUTH)
     // ==========================================
     const loginContainer = document.getElementById("login-container");
     const loginForm = document.getElementById("login-form");
     const loginError = document.getElementById("login-error");
     const btnLogout = document.getElementById("btn-logout");
     
-    // Elementos principais do layout do admin que devem ser ocultados se deslogado
     const layoutSidebar = document.querySelector(".sidebar");
     const layoutMainContent = document.querySelector(".main-content");
     const layoutMobileNavbar = document.querySelector(".mobile-navbar");
 
-    function checkAuth() {
-      const isAuthed = sessionStorage.getItem("creamy_admin_auth") === "true";
-      if (!isAuthed) {
-        // Deslogado: ocultar layout e exibir painel de login
+    function checkAuth(session) {
+      if (!session) {
         if (layoutSidebar) layoutSidebar.style.display = "none";
         if (layoutMainContent) layoutMainContent.style.display = "none";
         if (layoutMobileNavbar) layoutMobileNavbar.style.setProperty("display", "none", "important");
         if (loginContainer) {
           loginContainer.style.display = "flex";
-          // Redefinir valores dos inputs
           document.getElementById("login-username").value = "";
           document.getElementById("login-password").value = "";
         }
       } else {
-        // Logado: exibir layout e ocultar login
         if (loginContainer) loginContainer.style.display = "none";
         if (layoutSidebar) layoutSidebar.style.display = "flex";
         if (layoutMainContent) layoutMainContent.style.display = "block";
-        // A navbar mobile só deve aparecer no responsivo através de regras CSS padrão
         if (layoutMobileNavbar) layoutMobileNavbar.style.removeProperty("display");
         
-        // Redimensionar mapa para caso o carregamento inicial tenha ocultado o container
         if (map) {
           setTimeout(() => { map.resize(); }, 200);
         }
+        loadAllData();
       }
     }
 
+    function loadAllData() {
+      loadConfigurations();
+      loadLocalMetrics();
+      loadCloakerLogs();
+    }
+
     if (loginForm) {
-      loginForm.addEventListener("submit", function(e) {
+      loginForm.addEventListener("submit", async function(e) {
         e.preventDefault();
-        const username = document.getElementById("login-username").value.trim();
+        const email = document.getElementById("login-username").value.trim();
         const password = document.getElementById("login-password").value.trim();
         
-        // Credenciais padrões para o painel
-        if (username === "admin" && password === "creamyadmin123") {
-          sessionStorage.setItem("creamy_admin_auth", "true");
-          if (loginError) loginError.style.display = "none";
-          checkAuth();
-        } else {
+        if (loginError) loginError.style.display = "none";
+        
+        const { data, error } = await sb.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+        if (error) {
           if (loginError) {
             loginError.style.display = "block";
-            loginError.innerText = "Usuário ou senha incorretos!";
+            loginError.innerText = "E-mail ou senha incorretos!";
           }
         }
       });
     }
 
     if (btnLogout) {
-      btnLogout.addEventListener("click", function() {
+      btnLogout.addEventListener("click", async function() {
         if (confirm("Tem certeza que deseja sair da administração?")) {
-          sessionStorage.removeItem("creamy_admin_auth");
-          checkAuth();
+          await sb.auth.signOut();
         }
       });
     }
@@ -1915,7 +1911,6 @@
       });
     }
 
-    // Fechar menu mobile ao clicar fora dele
     document.addEventListener("click", function(e) {
       if (window.innerWidth <= 768 && layoutSidebar && layoutSidebar.classList.contains("open")) {
         if (!layoutSidebar.contains(e.target) && e.target !== mobileMenuBtn) {
@@ -1924,7 +1919,6 @@
       }
     });
 
-    // Fechar menu mobile ao clicar em algum item
     menuItems.forEach(item => {
       item.addEventListener("click", function() {
         if (window.innerWidth <= 768 && layoutSidebar) {
@@ -1936,12 +1930,13 @@
     // ==========================================
     // 9. INICIALIZAÇÃO
     // ==========================================
-    checkAuth(); // Verificar autenticação no topo
+    sb.auth.onAuthStateChange((event, session) => {
+      console.log("Auth State:", event);
+      checkAuth(session);
+    });
+
     initMap();
-    loadLocalMetrics();
-    loadConfigurations();
-    loadCloakerLogs();
-    loadCloakerStats();
+    initRealtime();
     generateUtmUrl();
   </script>
 </body>
