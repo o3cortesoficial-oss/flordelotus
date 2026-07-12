@@ -208,7 +208,47 @@
       });
     }
 
+    function renderShippingOptions(address) {
+      if (!status) return;
+      status.innerHTML = '';
+      var title = document.createElement('div');
+      title.textContent = 'Entrega em: ' + address + '.';
+      title.style.cssText = 'color:#194a97;font-weight:600;margin-bottom:10px;';
+      var option = document.createElement('label');
+      option.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #194a97;border-radius:8px;padding:12px;cursor:pointer;color:#424242;';
+      option.innerHTML = '<span><input type="radio" name="restored-shipping-rate" checked style="margin-right:8px">Entrega padrão<br><small style="margin-left:22px;color:#676767">Prazo estimado: 3 a 7 dias úteis</small></span><strong style="color:#194a97">Grátis</strong>';
+      status.appendChild(title);
+      status.appendChild(option);
+      localStorage.setItem('creamyShippingRate', 'standard-free');
+    }
+
     async function findNearestStore() {
+      var savedAddress = localStorage.getItem('creamyShippingAddress');
+      if (!savedAddress) {
+        showStatus('Informe seu CEP em “Receba em Casa” antes de procurar uma loja.', true);
+        return;
+      }
+      showLoading('Buscando a loja Creamy mais próxima...');
+      try {
+        var geocodeResponse = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=' + encodeURIComponent(savedAddress));
+        var geocode = await geocodeResponse.json();
+        if (!geocodeResponse.ok || !geocode.length) throw new Error('address lookup failed');
+        var lookupLat = Number(geocode[0].lat);
+        var lookupLon = Number(geocode[0].lon);
+        var storeQuery = '[out:json][timeout:15];(node["name"~"Creamy",i](around:50000,' + lookupLat + ',' + lookupLon + ');way["name"~"Creamy",i](around:50000,' + lookupLat + ',' + lookupLon + '););out center tags;';
+        var storeResponse = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(storeQuery));
+        var storeData = await storeResponse.json();
+        if (!storeResponse.ok || !(storeData.elements || []).length) throw new Error('no store');
+        var nearest = storeData.elements[0];
+        var nearestTags = nearest.tags || {};
+        var nearestAddress = [nearestTags['addr:street'], nearestTags['addr:housenumber'], nearestTags['addr:suburb'], nearestTags['addr:city']].filter(Boolean).join(', ');
+        var nearestMessage = 'Loja mais próxima: ' + (nearestTags.name || 'Creamy') + (nearestAddress ? ' — ' + nearestAddress : '') + '.';
+        localStorage.setItem('creamyPickupStore', nearestMessage);
+        showStatus(nearestMessage);
+      } catch (_) {
+        showStatus('Não encontramos uma loja Creamy próxima. Só será possível receber em casa.', true);
+      }
+      return;
       showLoading('Buscando a loja Creamy mais próxima...');
       if (!navigator.geolocation) {
         showStatus('Não encontramos uma loja próxima. Só será possível receber em casa.', true);
@@ -262,7 +302,8 @@
         if (shippingContainer) shippingContainer.style.display = isPickup ? 'none' : 'flex';
         if (isPickup && triggerSearch) findNearestStore();
         else if (isPickup && status) status.textContent = localStorage.getItem('creamyPickupStore') || 'Clique novamente em “Retire Numa Loja” para buscar uma unidade próxima.';
-        else if (status) status.textContent = localStorage.getItem('creamyShippingAddress') || '';
+        else if (status && localStorage.getItem('creamyShippingAddress')) renderShippingOptions(localStorage.getItem('creamyShippingAddress'));
+        else if (status) status.textContent = '';
       }
       delivery.addEventListener('click', function () { choose('delivery', false); }, true);
       pickup.addEventListener('click', function () { choose('pickup', true); }, true);
@@ -273,6 +314,39 @@
     var button = document.querySelector('.custom-shipping-button');
     var form = document.querySelector('#custom-shipping-form');
     if (!input || !button || !form) return;
+    var unknownCepLink = document.querySelector('.custom-shipping-link');
+    if (unknownCepLink) {
+      unknownCepLink.removeAttribute('target');
+      unknownCepLink.setAttribute('href', 'javascript:void(0)');
+      unknownCepLink.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (document.querySelector('.restored-postal-search')) return;
+        var search = document.createElement('div');
+        search.className = 'restored-postal-search';
+        search.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px;';
+        search.innerHTML = '<input class="restored-postal-search-input" type="text" placeholder="Digite sua rua, cidade e estado" style="flex:1;min-width:190px;height:40px;border:1px solid #ccc;border-radius:100px;padding:0 14px;box-sizing:border-box">' +
+          '<button class="restored-postal-search-button" type="button" style="height:40px;border:0;border-radius:100px;padding:0 16px;background:#194a97;color:#fff;font-weight:700">Buscar CEP</button>';
+        status.insertAdjacentElement('beforebegin', search);
+        search.querySelector('.restored-postal-search-button').addEventListener('click', async function () {
+          var queryInput = search.querySelector('.restored-postal-search-input');
+          if (!queryInput.value.trim()) return;
+          showLoading('Buscando seu CEP...');
+          try {
+            var response = await fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=br&q=' + encodeURIComponent(queryInput.value.trim()));
+            var results = await response.json();
+            var postalCode = results[0] && results[0].address && results[0].address.postcode;
+            if (!response.ok || !postalCode) throw new Error('postal code not found');
+            var digits = postalCode.replace(/\D/g, '').slice(0, 8);
+            input.value = digits.slice(0, 5) + '-' + digits.slice(5);
+            button.disabled = digits.length !== 8;
+            showStatus('CEP encontrado: ' + input.value + '. Confirme em “Calcular”.');
+          } catch (_) {
+            showStatus('Não foi possível encontrar o CEP. Tente informar mais detalhes do endereço.', true);
+          }
+        });
+      }, true);
+    }
     input.addEventListener('input', function () {
       var digits = input.value.replace(/\D/g, '').slice(0, 8);
       input.value = digits.length > 5 ? digits.slice(0, 5) + '-' + digits.slice(5) : digits;
@@ -307,6 +381,7 @@
         var fullAddress = [address.logradouro, address.bairro, address.localidade, address.uf].filter(Boolean).join(', ');
         localStorage.setItem('creamyShippingAddress', fullAddress);
         showStatus('Entrega em: ' + fullAddress + '.');
+        renderShippingOptions(fullAddress);
         button.textContent = 'Calculado';
       } catch (_) {
         showStatus('CEP não encontrado. Confira o número e tente novamente.', true);
