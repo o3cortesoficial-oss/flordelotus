@@ -526,12 +526,7 @@ async function applyCloakerRules(cloaker, isRealtimeUpdate = false) {
 
     // Se ja foi bloqueado por UA/dispositivo, agir imediatamente
     if (blockThisAccess) {
-      if (isRealtimeUpdate) {
-        console.warn("[Cloaker] BLOQUEIO EM TEMPO REAL! Redirecionando imediatamente:", cloaker.safe_url);
-        window.location.replace(cloaker.safe_url || "/artigo-skincare-cuidados.html");
-      } else {
-        await logCloAccessImmediate(false, blockReason, botType || "other_block", cloaker.safe_url);
-      }
+      await logCloAccessImmediate(false, blockReason, botType || "other_block", cloaker.safe_url);
       return;
     }
 
@@ -574,11 +569,7 @@ async function applyCloakerRules(cloaker, isRealtimeUpdate = false) {
           }
 
           if (!allow) {
-            if (isRealtimeUpdate) {
-              window.location.replace(cloaker.safe_url || "/artigo-skincare-cuidados.html");
-            } else {
-              logCloakerAccess(false, ipReason, "other_block", cloaker.safe_url, data.ip, `${data.city || ""}, ${data.country_code}`);
-            }
+            logCloakerAccess(false, ipReason, "other_block", cloaker.safe_url, data.ip, `${data.city || ""}, ${data.country_code}`);
           } else {
             logCloakerAccess(true, "Usuário Real Liberado", null, null, data.ip, `${data.city || ""}, ${data.country_code}`);
           }
