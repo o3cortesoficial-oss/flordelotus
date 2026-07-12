@@ -37,25 +37,21 @@ export default function middleware(request) {
     
     const isBot = botPatterns.some(pattern => userAgent.toLowerCase().includes(pattern));
     if (isBot) {
-      // Redireciona sutilmente para um site white institucional (Blog Creamy Oficial)
-      return new Response(null, {
-        status: 302,
-        headers: { 'Location': 'https://blog.creamy.com.br/' }
-      });
+      console.warn("[Middleware] Bot detectado. Servindo Safe Page in-place.");
+      const safeUrl = new URL('/artigo-skincare-cuidados.html', request.url);
+      return fetch(safeUrl);
     }
 
     // 3. Filtro Geográfico Nativo da Vercel Edge Network
-    // Redireciona tráfego de fora do Brasil (ex: revisores do Facebook/Google nos EUA)
+    // Serve a Safe Page in-place para tráfego de fora do Brasil
     const country = request.headers.get('x-vercel-ip-country') || '';
     const host = request.headers.get('host') || '';
     const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
 
     if (country && country !== 'BR' && !isLocalhost) {
-      // Redireciona sutilmente para um site white institucional (Blog Creamy Oficial)
-      return new Response(null, {
-        status: 302,
-        headers: { 'Location': 'https://blog.creamy.com.br/' }
-      });
+      console.warn("[Middleware] IP Estrangeiro detectado (" + country + "). Servindo Safe Page in-place.");
+      const safeUrl = new URL('/artigo-skincare-cuidados.html', request.url);
+      return fetch(safeUrl);
     }
   }
 

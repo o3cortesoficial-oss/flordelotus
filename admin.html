@@ -956,6 +956,30 @@
     <!-- TAB: PROTECT (CLOAKER) -->
     <!-- ========================================== -->
     <div class="tab-content" id="tab-protect">
+      <!-- BOT KPI METRICS GRID -->
+      <div class="metrics-grid" style="margin-bottom: 25px;">
+        <div class="kpi-card" style="padding: 16px 20px; border-left: 4px solid #1877f2; border-radius: 8px;">
+          <div class="kpi-title" style="color: #1877f2; margin-bottom: 4px; font-size: 10px;">Meta / Facebook Bots</div>
+          <div class="kpi-value" id="kpi-bot-meta" style="font-size: 24px; font-weight: 700; color: var(--brand-navy);">0</div>
+          <div class="kpi-footer" style="font-size: 10px; color: var(--text-muted);">Acessos interceptados</div>
+        </div>
+        <div class="kpi-card" style="padding: 16px 20px; border-left: 4px solid #ea4335; border-radius: 8px;">
+          <div class="kpi-title" style="color: #ea4335; margin-bottom: 4px; font-size: 10px;">Google Bots / Ads</div>
+          <div class="kpi-value" id="kpi-bot-google" style="font-size: 24px; font-weight: 700; color: var(--brand-navy);">0</div>
+          <div class="kpi-footer" style="font-size: 10px; color: var(--text-muted);">Acessos interceptados</div>
+        </div>
+        <div class="kpi-card" style="padding: 16px 20px; border-left: 4px solid #010101; border-radius: 8px;">
+          <div class="kpi-title" style="color: #010101; margin-bottom: 4px; font-size: 10px;">TikTok Bots</div>
+          <div class="kpi-value" id="kpi-bot-tiktok" style="font-size: 24px; font-weight: 700; color: var(--brand-navy);">0</div>
+          <div class="kpi-footer" style="font-size: 10px; color: var(--text-muted);">Acessos interceptados</div>
+        </div>
+        <div class="kpi-card" style="padding: 16px 20px; border-left: 4px solid var(--brand-coral); border-radius: 8px;">
+          <div class="kpi-title" style="color: var(--brand-coral); margin-bottom: 4px; font-size: 10px;">Dispositivos/VPNs/IPs</div>
+          <div class="kpi-value" id="kpi-bot-other" style="font-size: 24px; font-weight: 700; color: var(--brand-navy);">0</div>
+          <div class="kpi-footer" style="font-size: 10px; color: var(--text-muted);">Acessos bloqueados</div>
+        </div>
+      </div>
+
       <div class="panel-grid">
         <!-- Esquerda: Configurações do Cloaker -->
         <div class="panel">
@@ -966,7 +990,7 @@
           <div class="switch-container">
             <div>
               <div class="switch-label">Ativar Cloaker (Filtro Inteligente)</div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Redireciona revisores e bots do Meta/Google para uma página segura.</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Ativa a proteção in-place. Visitantes bloqueados verão a Safe Page sem mudar a URL.</div>
             </div>
             <label class="switch">
               <input type="checkbox" id="toggle-cloaker" checked>
@@ -976,12 +1000,12 @@
 
           <div class="form-group" style="margin-top: 20px;">
             <label class="form-label" for="safe-url">URL da Safe Page (Página de Conteúdo Informativo)</label>
-            <input class="form-input" id="safe-url" type="text" value="http://localhost:8000/artigo-skincare-cuidados.html" style="font-family: monospace;">
+            <input class="form-input" id="safe-url" type="text" value="" style="font-family: monospace;">
           </div>
 
           <div class="form-group">
             <label class="form-label" for="money-url">URL da Money Page (Sua Página de Vendas com Oferta)</label>
-            <input class="form-input" id="money-url" type="text" value="http://localhost:8000/index.html" style="font-family: monospace;">
+            <input class="form-input" id="money-url" type="text" value="" style="font-family: monospace;">
           </div>
 
           <div class="form-row">
@@ -1001,6 +1025,80 @@
             </div>
           </div>
 
+          <!-- BOT-SPECIFIC BLOCK SETTINGS -->
+          <div class="form-group" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <label class="form-label" style="margin-bottom: 12px; color: var(--brand-navy);">Filtro por Origem (Bots de Análise)</label>
+            
+            <div class="switch-container" style="margin-bottom: 12px; padding: 8px 0;">
+              <div>
+                <div class="switch-label" style="font-size: 13px;">Bloquear Meta / Facebook Bot</div>
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Filtra robôs de auditoria e verificação do Meta Ads.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="cloaker-block-meta" checked>
+                <span class="slider-switch"></span>
+              </label>
+            </div>
+
+            <div class="switch-container" style="margin-bottom: 12px; padding: 8px 0;">
+              <div>
+                <div class="switch-label" style="font-size: 13px;">Bloquear Google Bot / AdsBot</div>
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Filtra rastreadores do Google Search e Google Ads.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="cloaker-block-google" checked>
+                <span class="slider-switch"></span>
+              </label>
+            </div>
+
+            <div class="switch-container" style="margin-bottom: 12px; padding: 8px 0;">
+              <div>
+                <div class="switch-label" style="font-size: 13px;">Bloquear TikTok Bot</div>
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Filtra robôs de verificação do TikTok Ads.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="cloaker-block-tiktok" checked>
+                <span class="slider-switch"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- DEVICE BLOCK SETTINGS -->
+          <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <label class="form-label" style="margin-bottom: 12px; color: var(--brand-navy);">Filtro por Dispositivo</label>
+            
+            <div class="form-row">
+              <div class="switch-container" style="padding: 8px 0; border: none;">
+                <div>
+                  <div class="switch-label" style="font-size: 13px;">Bloquear Desktop</div>
+                  <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Bloqueia computadores.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cloaker-block-desktop">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+              
+              <div class="switch-container" style="padding: 8px 0; border: none;">
+                <div>
+                  <div class="switch-label" style="font-size: 13px;">Bloquear Mobile</div>
+                  <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Bloqueia celulares/tablets.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cloaker-block-mobile">
+                  <span class="slider-switch"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- IP BLACKLIST -->
+          <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <label class="form-label" for="cloaker-blacklist-ips">Blacklist de IPs Personalizada</label>
+            <span style="font-size: 10px; color: var(--text-muted); display: block; margin-top: -4px; margin-bottom: 8px;">Bloqueia IPs específicos (um por linha ou separados por vírgula).</span>
+            <textarea class="form-input" id="cloaker-blacklist-ips" rows="3" placeholder="Ex: 192.168.0.1, 200.150.12.34" style="font-family: monospace; font-size: 12px; resize: vertical;"></textarea>
+          </div>
+
           <button class="btn" id="btn-save-cloaker">Salvar Regras</button>
         </div>
 
@@ -1008,13 +1106,14 @@
         <div class="panel">
           <div class="panel-header">
             <h2 class="panel-title">Logs de Acesso do Cloaker</h2>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <button class="btn btn-secondary" id="btn-clear-cloaker-logs" style="padding: 4px 10px; font-size: 10px; border-radius: 4px;">Limpar Logs</button>
+              <button class="btn btn-secondary" id="btn-reset-cloaker-stats" style="padding: 4px 10px; font-size: 10px; border-radius: 4px; background-color: var(--brand-coral); color: white;">Zerar Stats</button>
               <span class="badge badge-blue">Tempo Real</span>
             </div>
           </div>
           
-          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 11px; font-family: monospace; max-height: 280px; overflow-y: auto;" id="cloaker-logs">
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 11px; font-family: monospace; max-height: 520px; overflow-y: auto;" id="cloaker-logs">
             <div style="text-align: center; color: var(--text-muted); padding: 20px 0;">Nenhum acesso de proteção registrado.</div>
           </div>
         </div>
@@ -1555,6 +1654,14 @@
         if (cloaker.blockVpn) document.getElementById("cloaker-block-vpn").value = cloaker.blockVpn;
         if (cloaker.geofilter) document.getElementById("cloaker-geofilter").value = cloaker.geofilter;
 
+        // Novos campos do Cloaker
+        document.getElementById("cloaker-block-meta").checked = cloaker.blockMeta !== false; // default true
+        document.getElementById("cloaker-block-google").checked = cloaker.blockGoogle !== false; // default true
+        document.getElementById("cloaker-block-tiktok").checked = cloaker.blockTikTok !== false; // default true
+        document.getElementById("cloaker-block-desktop").checked = !!cloaker.blockDesktop; // default false
+        document.getElementById("cloaker-block-mobile").checked = !!cloaker.blockMobile; // default false
+        document.getElementById("cloaker-blacklist-ips").value = cloaker.blacklistIPs || "";
+
       } catch(e) {
         console.error("Erro ao carregar configurações salvas:", e);
       }
@@ -1616,7 +1723,27 @@
         const blockVpn = document.getElementById("cloaker-block-vpn").value;
         const geofilter = document.getElementById("cloaker-geofilter").value;
         
-        const cloaker = { enabled, safeUrl, moneyUrl, blockVpn, geofilter };
+        // Novos campos do Cloaker
+        const blockMeta = document.getElementById("cloaker-block-meta").checked;
+        const blockGoogle = document.getElementById("cloaker-block-google").checked;
+        const blockTikTok = document.getElementById("cloaker-block-tiktok").checked;
+        const blockDesktop = document.getElementById("cloaker-block-desktop").checked;
+        const blockMobile = document.getElementById("cloaker-block-mobile").checked;
+        const blacklistIPs = document.getElementById("cloaker-blacklist-ips").value.trim();
+
+        const cloaker = { 
+          enabled, 
+          safeUrl, 
+          moneyUrl, 
+          blockVpn, 
+          geofilter,
+          blockMeta,
+          blockGoogle,
+          blockTikTok,
+          blockDesktop,
+          blockMobile,
+          blacklistIPs
+        };
         localStorage.setItem("creamy_cloaker_config", JSON.stringify(cloaker));
         
         // Notificar outras abas para que a index.html possa ler a alteração e injetar na hora
@@ -1629,12 +1756,25 @@
     });
 
     // ==========================================
-    // 6. LOGS DO CLOAKER (REAL-TIME RENDERING)
+    // 6. LOGS E ESTATÍSTICAS DO CLOAKER (REAL-TIME RENDERING)
     // ==========================================
     const cloakerLogsDiv = document.getElementById("cloaker-logs");
     
+    function loadCloakerStats() {
+      try {
+        const stats = JSON.parse(localStorage.getItem("creamy_cloaker_stats") || '{"meta":0,"google":0,"tiktok":0,"other":0}');
+        document.getElementById("kpi-bot-meta").innerText = stats.meta || 0;
+        document.getElementById("kpi-bot-google").innerText = stats.google || 0;
+        document.getElementById("kpi-bot-tiktok").innerText = stats.tiktok || 0;
+        document.getElementById("kpi-bot-other").innerText = stats.other || 0;
+      } catch(e) {
+        console.error("Erro ao carregar estatísticas do cloaker:", e);
+      }
+    }
+
     function loadCloakerLogs() {
       try {
+        loadCloakerStats();
         const logs = JSON.parse(localStorage.getItem("creamy_cloaker_logs") || "[]");
         if (logs.length === 0) {
           cloakerLogsDiv.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px 0;">Nenhum acesso de proteção registrado.</div>`;
@@ -1647,7 +1787,7 @@
           const timeStr = date.toLocaleDateString("pt-BR") + " " + date.toLocaleTimeString("pt-BR", { hour: '2-digit', minute:'2-digit', second:'2-digit' });
           const statusText = log.allowed ? "[LIBERADO]" : "[BLOQUEADO]";
           const statusColor = log.allowed ? "var(--color-green)" : "var(--color-red)";
-          const redirectionText = log.allowed ? "" : ` &bull; Redirecionado para Safe Page`;
+          const redirectionText = log.allowed ? "" : ` &bull; Exibida Safe Page (In-Place)`;
           
           html += `
             <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 6px;">
@@ -1673,14 +1813,25 @@
       });
     }
 
+    const btnResetCloakerStats = document.getElementById("btn-reset-cloaker-stats");
+    if (btnResetCloakerStats) {
+      btnResetCloakerStats.addEventListener("click", function() {
+        if (confirm("Deseja zerar as estatísticas de acessos de bots?")) {
+          localStorage.setItem("creamy_cloaker_stats", JSON.stringify({ meta: 0, google: 0, tiktok: 0, other: 0 }));
+          loadCloakerStats();
+        }
+      });
+    }
+
     // Atualizar no storage listener
     window.addEventListener("storage", function(e) {
       if (e.key === "creamy_cloaker_logs") {
         loadCloakerLogs();
       }
-    });
-
-    // ==========================================
+      if (e.key === "creamy_cloaker_stats") {
+        loadCloakerStats();
+      }
+    });    // ==========================================
     // 7. SISTEMA DE LOGIN E SEGURANÇA
     // ==========================================
     const loginContainer = document.getElementById("login-container");
@@ -1790,6 +1941,7 @@
     loadLocalMetrics();
     loadConfigurations();
     loadCloakerLogs();
+    loadCloakerStats();
     generateUtmUrl();
   </script>
 </body>

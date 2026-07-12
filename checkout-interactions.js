@@ -290,6 +290,7 @@
         var isPickup = mode === 'pickup';
         frame.style.transition = 'transform .3s ease';
         frame.style.transform = isPickup ? 'translateX(100%)' : 'translateX(0)';
+        frame.style.visibility = 'hidden';
         frame.classList.toggle('vtex-shipping-preview-0-x-frameDelivery', !isPickup);
         frame.classList.toggle('vtex-shipping-preview-0-x-framePickup', isPickup);
         delivery.classList.toggle('blue', !isPickup);
@@ -298,6 +299,14 @@
         pickup.setAttribute('aria-selected', String(isPickup));
         delivery.classList.toggle('restored-shipping-selected', !isPickup);
         pickup.classList.toggle('restored-shipping-selected', isPickup);
+        delivery.style.boxSizing = 'border-box';
+        pickup.style.boxSizing = 'border-box';
+        delivery.style.border = !isPickup ? '1px solid #0096bb' : '1px solid #cbcbcb';
+        pickup.style.border = isPickup ? '1px solid #0096bb' : '1px solid #cbcbcb';
+        delivery.style.borderRadius = '100px';
+        pickup.style.borderRadius = '100px';
+        delivery.style.boxShadow = !isPickup ? '0 2px 5px rgba(0,0,0,.16)' : 'none';
+        pickup.style.boxShadow = isPickup ? '0 2px 5px rgba(0,0,0,.16)' : 'none';
         localStorage.setItem('creamyShippingMethod', mode);
         if (shippingContainer) shippingContainer.style.display = isPickup ? 'none' : 'flex';
         if (isPickup && triggerSearch) findNearestStore();
@@ -362,22 +371,9 @@
       setTimeout(function () { button.style.transform = 'scale(1)'; }, 180);
       try {
         var cep = input.value.replace(/\D/g, '');
-        var address;
-        try {
-          address = await lookupCepJsonp(cep);
-        } catch (_) {
-          try {
-            var fallbackResponse = await fetch('https://brasilapi.com.br/api/cep/v2/' + cep);
-            address = await fallbackResponse.json();
-            if (!fallbackResponse.ok) throw new Error('invalid cep');
-            address.logradouro = address.street;
-            address.bairro = address.neighborhood;
-            address.localidade = address.city;
-            address.uf = address.state;
-          } catch (_) {
-            throw new Error('invalid cep');
-          }
-        }
+        var cepResponse = await fetch('/api/cep?cep=' + encodeURIComponent(cep));
+        var address = await cepResponse.json();
+        if (!cepResponse.ok || !address || address.erro) throw new Error('invalid cep');
         var fullAddress = [address.logradouro, address.bairro, address.localidade, address.uf].filter(Boolean).join(', ');
         localStorage.setItem('creamyShippingAddress', fullAddress);
         showStatus('Entrega em: ' + fullAddress + '.');
