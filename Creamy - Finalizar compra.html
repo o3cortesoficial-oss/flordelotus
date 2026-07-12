@@ -253,4 +253,474 @@
  </div>
  
  </div>
- <iframe height=0 width=0 style=display:none;visibility:hidden></iframe><iframe id=insider-worker style=display:none></iframe><div id=batBeacon456209298179 style=width:0px;height:0px;display:none;visibility:hidden></div><iframe height=0 width=0 allowpaymentrequest=true style=display:none;visibility:hidden></iframe><div classname="ins-ghost textads banner-ads banner_ads ad-unit ad-zone ad-space adsbox" class="ins-ghost textads banner-ads banner_ads ad-unit ad-zone ad-space adsbox" style=width:0px!important;height:1px!important;position:absolute!important;left:calc(-100vw)!important;top:calc(-100vh)!important></div><div id=beon-region-1e5739e2-43d2-453e-bcf8-ce11c12869bf class=beon-region data-config-region='{"isHidden":false,"region_type":"normal"}'><div id=beon-element-329531ed-7340-4458-ab27-ada77ff9af9a data-type=undefined data-only-id=329531ed-7340-4458-ab27-ada77ff9af9a class=beon-container style=order:1><div class=beon-interaction data-event-root='[null, "n/a", null]'></div></div></div><div id=beon-region-e18ed6cb-89d1-463d-8586-4d690909041f class=beon-region data-config-region='{"isHidden":false,"region_type":"normal"}'><div id=beon-element-d0c067da-b724-444d-8c50-3604965325f3 data-type=undefined data-only-id=d0c067da-b724-444d-8c50-3604965325f3 class=beon-container style=order:1><div class="beon-interaction beon-notificacao beon-notificacao__basica beon-notificacao--with-cta beon-notificacao--with-bg beon-notificacao--horizontal beon-notificacao--180deg beon-notificacao--with-delta bn--with-clock beon-wrapper initialized beon-notificacao--dismissed bn--none sf-hidden" data-config='{"auto_dismiss": 15, "allow_dismiss": 1, "dismiss_style": "times", "dismiss_label": "Dispensar", "a":1}' style=font-size:13px data-event-root='[null, "PUSH jul10/26", null]' data-event-analytics="[PUSH jul10/26, true, false]"> </div></div></div><script>(function Wi(n,e,t=!1){const a={};n.currentScript&&n.currentScript.remove(),function n(t){const o=t.getAttribute(e);o&&(a[o]=t);Array.from(t.children).forEach(n)}(n.body),Object.keys(a).forEach(n=>{const e=a[n],t=n.split(".");if(t.length>1){const n=t.slice(0,-1).join("."),o=a[n];o&&e.parentElement!==o&&o.appendChild(e)}}),t||n.querySelectorAll("["+e+"]").forEach(n=>n.removeAttribute(e))})(document, "data-sf-nesting-track-id");</script>
+ <iframe height=0 width=0 style=display:none;visibility:hidden></iframe><iframe id=insider-worker style=display:none></iframe><div id=batBeacon456209298179 style=width:0px;height:0px;display:none;visibility:hidden></div><iframe height=0 width=0 allowpaymentrequest=true style=display:none;visibility:hidden></iframe><div classname="ins-ghost textads banner-ads banner_ads ad-unit ad-zone ad-space adsbox" class="ins-ghost textads banner-ads banner_ads ad-unit ad-zone ad-space adsbox" style=width:0px!important;height:1px!important;position:absolute!important;left:calc(-100vw)!important;top:calc(-100vh)!important></div><div id=beon-region-1e5739e2-43d2-453e-bcf8-ce11c12869bf class=beon-region data-config-region='{"isHidden":false,"region_type":"normal"}'><div id=beon-element-329531ed-7340-4458-ab27-ada77ff9af9a data-type=undefined data-only-id=329531ed-7340-4458-ab27-ada77ff9af9a class=beon-container style=order:1><div class=beon-interaction data-event-root='[null, "n/a", null]'></div></div></div><div id=beon-region-e18ed6cb-89d1-463d-8586-4d690909041f class=beon-region data-config-region='{"isHidden":false,"region_type":"normal"}'><div id=beon-element-d0c067da-b724-444d-8c50-3604965325f3 data-type=undefined data-only-id=d0c067da-b724-444d-8c50-3604965325f3 class=beon-container style=order:1><div class="beon-interaction beon-notificacao beon-notificacao__basica beon-notificacao--with-cta beon-notificacao--with-bg beon-notificacao--horizontal beon-notificacao--180deg beon-notificacao--with-delta bn--with-clock beon-wrapper initialized beon-notificacao--dismissed bn--none sf-hidden" data-config='{"auto_dismiss": 15, "allow_dismiss": 1, "dismiss_style": "times", "dismiss_label": "Dispensar", "a":1}' style=font-size:13px data-event-root='[null, "PUSH jul10/26", null]' data-event-analytics="[PUSH jul10/26, true, false]"> </div></div></div><script>(function Wi(n,e,t=!1){const a={};n.currentScript&&n.currentScript.remove(),function n(t){const o=t.getAttribute(e);o&&(a[o]=t);Array.from(t.children).forEach(n)}(n.body),Object.keys(a).forEach(n=>{const e=a[n],t=n.split(".");if(t.length>1){const n=t.slice(0,-1).join("."),o=a[n];o&&e.parentElement!==o&&o.appendChild(e)}}),t||n.querySelectorAll("["+e+"]").forEach(n=>n.removeAttribute(e))})(document, "data-sf-nesting-track-id");</script><!-- ================================================================= -->
+<!-- CODIGO DE INTEGRACAO E INTERATIVIDADE INJETADO POR ANTIGRAVITY -->
+<!-- ================================================================= -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// --- CONFIGURACAO DE INTEGRACAO COM SEU BANCO DE DADOS ---
+const DATABASE_CONFIG = {
+  cartUrl: "", 
+  shippingUrl: "", 
+  newsletterUrl: "",
+  kitSkuId: "236"
+};
+
+// --- SUPABASE CLIENT INITIALIZATION ---
+const SUPABASE_URL = "https://nlawvbnenzyjknmsqlwa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sYXd2Ym5lbnp5amtubXNxbHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjg3NTcsImV4cCI6MjA5MTg0NDc1N30.gEr2isb_ibqpFQBXpPDcqai0_szbE3bucOt-oiqv0Uo";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false
+  }
+});
+
+// --- RASTREAMENTO E PIXELS DINAMICOS (FACEBOOK, GOOGLE, TIKTOK) ---
+const PixelManager = {
+  initialized: false,
+  configs: { metaId: "", gtmId: "", tiktokId: "" },
+
+  init() {
+    if (this.initialized) return;
+    try {
+      // 1. Meta / Facebook Pixel
+      if (this.configs.metaId) {
+        console.log("[Pixel] Inicializando Meta Pixel:", this.configs.metaId);
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', this.configs.metaId);
+        fbq('track', 'PageView');
+      }
+
+      // 2. Google Analytics / GTM
+      if (this.configs.gtmId) {
+        console.log("[Pixel] Inicializando Google Analytics/GTM:", this.configs.gtmId);
+        const isGtag = this.configs.gtmId.startsWith("G-") || this.configs.gtmId.startsWith("AW-");
+        if (isGtag) {
+          const script = document.createElement("script");
+          script.async = true;
+          script.src = "https://www.googletagmanager.com/gtag/js?id=" + this.configs.gtmId;
+          document.head.appendChild(script);
+          
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function(){ dataLayer.push(arguments); };
+          gtag('js', new Date());
+          gtag('config', this.configs.gtmId);
+        } else {
+          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer', this.configs.gtmId);
+        }
+      }
+
+      // 3. TikTok Pixel
+      if (this.configs.tiktokId) {
+        console.log("[Pixel] Inicializando TikTok Pixel:", this.configs.tiktokId);
+        !function (w, d, t) {
+          w.Tql = w.Tql || [];
+          var n = function () {
+            var o = { ti: this.configs.tiktokId, enable_cookie: true };
+            w.Tql.push(o);
+          };
+          var a = d.createElement(t);
+          a.async = !0;
+          a.src = "https://analytics.tiktok.com/i18n/pixel/sdk.js?sdkid=" + this.configs.tiktokId;
+          var c = d.getElementsByTagName(t)[0];
+          c.parentNode.insertBefore(a, c);
+        }(window, document, 'script');
+      }
+
+      this.initialized = true;
+    } catch(e) {
+      console.error("[Pixel] Erro ao inicializar pixels:", e);
+    }
+  },
+
+  track(eventName, detail, value = 0) {
+    if (!this.initialized) return;
+    try {
+      // Track Meta
+      if (this.configs.metaId && typeof fbq === "function") {
+        if (eventName === "visit") {
+          fbq('track', 'ViewContent', { content_name: detail });
+        } else if (eventName === "lead") {
+          fbq('track', 'Lead', { content_name: detail });
+        } else if (eventName === "purchase") {
+          fbq('track', 'Purchase', { value: value, currency: 'BRL' });
+        }
+      }
+      // Track Google
+      if (this.configs.gtmId) {
+        if (typeof gtag === "function") {
+          gtag('event', eventName, { 'event_category': 'funnel', 'event_label': detail, 'value': value });
+        } else if (typeof dataLayer !== "undefined") {
+          dataLayer.push({ event: eventName, category: 'funnel', label: detail, value: value });
+        }
+      }
+      // Track TikTok
+      if (this.configs.tiktokId && typeof ttq === "function") {
+        if (eventName === "visit") {
+          ttq.track('ViewContent', { content_name: detail });
+        } else if (eventName === "purchase") {
+          ttq.track('CompletePayment', { value: value, currency: 'BRL' });
+        }
+      }
+    } catch(e) {
+      console.error("[Pixel] Erro ao disparar evento de pixel:", eventName, e);
+    }
+  }
+};
+
+// --- LOG DE EVENTOS PARA O SUPABASE ---
+async function logLocalEvent(type, detail, value = 0) {
+  try {
+    let utmData = null;
+    try {
+      const sessionUtm = sessionStorage.getItem("creamy_utm_data");
+      if (sessionUtm) {
+        utmData = JSON.parse(sessionUtm);
+      }
+    } catch(e) {}
+
+    const newEvent = {
+      id: Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+      timestamp: new Date().toISOString(),
+      type: type,
+      detail: detail,
+      value: parseFloat(value) || 0
+    };
+
+    if (utmData) {
+      newEvent.utm = utmData;
+    }
+
+    const { error } = await sb.from("creamy_events").insert([newEvent]);
+    if (error) console.error("Erro ao gravar evento no Supabase:", error);
+    console.log(`[Event Logged] ${type}: ${detail} (Value: R$ ${value})`);
+    
+    // Encaminhar para o PixelManager
+    PixelManager.track(type, detail, value);
+  } catch(e) {
+    console.error("Erro ao registrar evento no Supabase:", e);
+  }
+}
+
+// --- CLOAKER (SISTEMA DE PROTECAO / SAFE PAGE - SUPABASE) ---
+async function runCloakerCheck() {
+  try {
+    const { data: cloaker, error } = await sb.from("creamy_cloaker_config").select("*").eq("id", 1).single();
+    if (error || !cloaker) return;
+    await applyCloakerRules(cloaker, false);
+  } catch(e) {
+    console.error("Erro ao rodar verificação do cloaker:", e);
+  }
+}
+
+async function applyCloakerRules(cloaker, isRealtimeUpdate = false) {
+  try {
+    if (!cloaker.enabled) {
+      console.log("[Cloaker] Proteção desativada nas configurações.");
+      return;
+    }
+
+    // Verificar se o administrador esta logado ou bypass manual via query parametro ou cookie
+    const urlParams = new URLSearchParams(window.location.search);
+    const bypassParam = urlParams.get("bypass") === "1";
+    const hasBypassCookie = document.cookie.includes("creamy_bypass=1");
+    const forceCheck = urlParams.get("force_check") === "1" || urlParams.get("test_block") === "1";
+    
+    let isAdminAuthed = false;
+    if (!forceCheck) {
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) isAdminAuthed = true;
+      } catch(e) {}
+    }
+
+    if (!forceCheck && (bypassParam || hasBypassCookie || isAdminAuthed)) {
+      console.log("[Cloaker] Acesso liberado via bypass de administrador.");
+      if (bypassParam) {
+        const d = new Date();
+        d.setTime(d.getTime() + (30*24*60*60*1000));
+        document.cookie = "creamy_bypass=1; expires=" + d.toUTCString() + "; path=/";
+      }
+      return;
+    }
+
+    const userAgent = navigator.userAgent || "";
+    const referrer = document.referrer || "";
+    
+    // 1. Identificar e classificar bots de analise por User-Agent
+    const ua = userAgent.toLowerCase();
+    let botType = null;
+    let isBot = false;
+
+    if (ua.includes("facebookexternalhit") || ua.includes("facebot") || ua.includes("meta-externalagent") || ua.includes("facebook")) {
+      botType = "meta";
+      isBot = true;
+    } else if (ua.includes("googlebot") || ua.includes("adsbot") || ua.includes("google-keyword") || ua.includes("mediapartners")) {
+      botType = "google";
+      isBot = true;
+    } else if (ua.includes("tiktokbot") || ua.includes("bytedance")) {
+      botType = "tiktok";
+      isBot = true;
+    } else {
+      const botPatterns = [
+        "crawler", "spider", "lighthouse", "chrome-lighthouse", "twitterbot", 
+        "bingbot", "yandexbot", "semrushbot", "ahrefsbot", "pingdom", "adcheck"
+      ];
+      for (let pattern of botPatterns) {
+        if (ua.includes(pattern)) {
+          botType = "other";
+          isBot = true;
+          break;
+        }
+      }
+    }
+
+    // 2. Identificar tipo de dispositivo (Mobile vs Desktop) - Sem innerWidth para evitar falsos positivos de console
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    let blockThisAccess = false;
+    let blockReason = "";
+
+    // 3. Aplicar regras de bloqueio de Bots
+    if (isBot) {
+      if (botType === "meta" && cloaker.block_meta !== false) {
+        blockThisAccess = true;
+        blockReason = "Bot Meta/Facebook Detectado";
+      } else if (botType === "google" && cloaker.block_google !== false) {
+        blockThisAccess = true;
+        blockReason = "Bot Google Detectado";
+      } else if (botType === "tiktok" && cloaker.block_tiktok !== false) {
+        blockThisAccess = true;
+        blockReason = "Bot TikTok Detectado";
+      } else if (botType === "other") {
+        blockThisAccess = true;
+        blockReason = "Bot Genérico Detectado";
+      }
+    }
+
+    // 4. Aplicar regras de bloqueio de Dispositivo
+    if (!blockThisAccess) {
+      if (isMobile && cloaker.block_mobile) {
+        blockThisAccess = true;
+        blockReason = "Dispositivo Móvel Bloqueado";
+      } else if (!isMobile && cloaker.block_desktop) {
+        blockThisAccess = true;
+        blockReason = "Dispositivo Desktop Bloqueado";
+      }
+    }
+
+    const blockVpn = cloaker.block_vpn === "yes";
+    const geoFilterBrazil = cloaker.geofilter === "brazil";
+    const hasBlacklist = cloaker.blacklist_ips && cloaker.blacklist_ips.trim().length > 0;
+
+    // Se ja foi bloqueado por UA/dispositivo, agir imediatamente
+    if (blockThisAccess) {
+      if (isRealtimeUpdate) {
+        console.warn("[Cloaker] BLOQUEIO EM TEMPO REAL! Redirecionando imediatamente:", cloaker.safe_url);
+        window.location.replace(cloaker.safe_url || "/artigo-skincare-cuidados.html");
+      } else {
+        await logCloAccessImmediate(false, blockReason, botType || "other_block", cloaker.safe_url);
+      }
+      return;
+    }
+
+    // Se precisar de checagem de IP, VPN ou Blacklist
+    if (blockVpn || geoFilterBrazil || hasBlacklist) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+
+      fetch("https://ipapi.co/json/", { signal: controller.signal })
+        .then(res => res.json())
+        .then(data => {
+          clearTimeout(timeoutId);
+          let allow = true;
+          let ipReason = "";
+
+          if (hasBlacklist) {
+            const blacklist = cloaker.blacklist_ips.split(/[\s,]+/).map(ip => ip.trim()).filter(ip => ip.length > 0);
+            if (blacklist.includes(data.ip)) {
+              allow = false;
+              ipReason = "IP em Blacklist Personalizada";
+            }
+          }
+
+          if (allow && geoFilterBrazil && data.country_code !== "BR") {
+            allow = false;
+            ipReason = `IP Estrangeiro Detectado (${data.country_name || data.country_code})`;
+          }
+
+          if (allow && blockVpn) {
+            const org = (data.org || "").toLowerCase();
+            const isHosting = org.includes("amazon") || org.includes("google") || org.includes("digitalocean") || 
+                              org.includes("linode") || org.includes("ovh") || org.includes("hetzner") || 
+                              org.includes("microsoft") || org.includes("m247") || org.includes("cloudflare") ||
+                              org.includes("hosting") || org.includes("vps") || org.includes("servers");
+
+            if (isHosting) {
+              allow = false;
+              ipReason = `Hosting/VPN Detectado (ISP: ${data.org})`;
+            }
+          }
+
+          if (!allow) {
+            if (isRealtimeUpdate) {
+              window.location.replace(cloaker.safe_url || "/artigo-skincare-cuidados.html");
+            } else {
+              logCloakerAccess(false, ipReason, "other_block", cloaker.safe_url, data.ip, `${data.city || ""}, ${data.country_code}`);
+            }
+          } else {
+            logCloakerAccess(true, "Usuário Real Liberado", null, null, data.ip, `${data.city || ""}, ${data.country_code}`);
+          }
+        })
+        .catch(err => {
+          clearTimeout(timeoutId);
+          console.log("Falha ou timeout na API do Cloaker, liberando por segurança.");
+          logCloakerAccess(true, "Conexão Liberada (Timeout na API)", null, null, "Desconhecido", "BR");
+        });
+    } else {
+      logCloakerAccess(true, "Acesso Liberado (Sem Filtros IP)", null, null, "Desconhecido", "BR");
+    }
+
+  } catch(e) {
+    console.error("[Cloaker] Erro na verificação:", e);
+  }
+}
+
+async function logCloAccessImmediate(allowed, reason, botType, safeUrl) {
+  await logCloakerAccess(allowed, reason, botType, safeUrl, "Desconhecido", "BR");
+}
+
+async function logCloakerAccess(allowed, reason, botType, safeUrl, ip = "Desconhecido", location = "BR") {
+  try {
+    const newLog = {
+      id: Date.now() + "_" + Math.random().toString(36).substr(2, 5),
+      timestamp: new Date().toISOString(),
+      allowed: allowed,
+      reason: reason,
+      ip: ip,
+      location: location,
+      user_agent: navigator.userAgent,
+      redirect_url: allowed ? null : safeUrl
+    };
+
+    // Gravar log no Supabase
+    const { error } = await sb.from("creamy_cloaker_logs").insert([newLog]);
+    if (error) console.error("Erro ao gravar log no Supabase:", error);
+
+    // Incrementar estatísticas via RPC
+    let columnName = "other";
+    if (!allowed) {
+      if (botType === "meta") columnName = "meta";
+      else if (botType === "google") columnName = "google";
+      else if (botType === "tiktok") columnName = "tiktok";
+    } else {
+      columnName = "real";
+    }
+    
+    const { error: rpcError } = await sb.rpc('increment_stat', { column_name: columnName });
+    if (rpcError) console.error("Erro ao incrementar estatística:", rpcError);
+    
+    if (!allowed && safeUrl) {
+      console.warn("[Cloaker] BLOQUEADO! Substituindo HTML in-place:", safeUrl);
+      
+      fetch(safeUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("Status " + res.status);
+          return res.text();
+        })
+        .then(html => {
+          document.open();
+          document.write(html);
+          document.close();
+          // Forçar substituição no documentElement se document.write não cobrir tudo instantaneamente
+          if (document.documentElement) {
+            document.documentElement.innerHTML = html;
+          }
+        })
+        .catch(err => {
+          console.error("Erro ao carregar Safe Page In-Place:", err);
+          window.location.replace(safeUrl);
+        });
+    }
+  } catch(e) {
+    console.error("Erro ao gravar logs do cloaker:", e);
+  }
+}
+
+// Bootstrap configs e Pixels do Supabase
+async function bootstrapApp() {
+  try {
+    const { data: pixels } = await sb.from("creamy_pixel_config").select("*").eq("id", 1).single();
+    if (pixels) {
+      PixelManager.configs = {
+        metaId: pixels.meta_id || "",
+        gtmId: pixels.gtm_id || "",
+        tiktokId: pixels.tiktok_id || ""
+      };
+      PixelManager.init();
+    }
+  } catch(e) {
+    console.error("Erro no bootstrap do Supabase:", e);
+  }
+}
+
+// Escutar atualizações das regras do Cloaker em tempo real para aplicar o bloqueio na hora
+function initCloakerRealtime() {
+  try {
+    // Escuta sem filtro e faz o filtro local no JS para evitar problemas de parse de filtros no Supabase proxy
+    // Usa um nome de canal único por tab para evitar conflitos de conexões duplicadas
+    const channelName = 'realtime_rules_' + Math.random().toString(36).substr(2, 9);
+    sb.channel(channelName)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'creamy_cloaker_config' }, payload => {
+        if (payload.new && payload.new.id === 1) {
+          console.log("[Cloaker] Regras alteradas no painel admin! Reavaliando bloqueio imediatamente...", payload.new);
+          applyCloakerRules(payload.new, true);
+        }
+      })
+      .subscribe();
+  } catch(e) {
+    console.error("[Cloaker] Falha ao iniciar canal realtime:", e);
+  }
+}
+
+// Polling fallback para garantir atualizações rápidas mesmo se o WebSocket falhar ou for bloqueado por adblockers
+function startCloakerPolling() {
+  setInterval(async () => {
+    try {
+      const { data: cloaker, error } = await sb.from("creamy_cloaker_config").select("*").eq("id", 1).single();
+      if (!error && cloaker) {
+        applyCloakerRules(cloaker, true);
+      }
+    } catch(e) {
+      console.error("[Cloaker Polling] Erro ao buscar configurações:", e);
+    }
+  }, 2000); // Checa a cada 2 segundos
+}
+
+// Inicializar bootstrap
+bootstrapApp();
+
+// Executar verificação do Cloaker
+runCloakerCheck();
+
+// Ativar escuta em tempo real
+initCloakerRealtime();
+
+// Iniciar polling fallback (garantia contra adblockers/erros WS)
+startCloakerPolling();
+
+// Registrar visita ao checkout
+logLocalEvent("visit", "Acesso à página de Checkout", 0);
+</script>
+</html>
