@@ -1,5 +1,5 @@
 import { CATALOG, presentCart, readCart, writeCart } from './lib/cart-state.js';
-import { recordCheckoutActivation } from './lib/events.js';
+import { recordCheckoutActivation, recordFunnelStage } from './lib/events.js';
 
 export default async function handler(request, response) {
   response.setHeader('Cache-Control', 'no-store');
@@ -16,10 +16,23 @@ export default async function handler(request, response) {
       if (activationToken !== state.lastActivationToken) {
         const total = CATALOG.product.sellingPrice * state.quantity;
         try {
-          await recordCheckoutActivation({ quantity: state.quantity, total });
+          await recordCheckoutActivation({ request, quantity: state.quantity, total });
+          if (!state.funnelStages.includes('cart')) state.funnelStages.push('cart');
           state.lastActivationToken = activationToken;
         } catch (error) {
           console.error('Erro ao registrar ativação do checkout:', error);
+        }
+      }
+    } else if (action === 'stage') {
+      const stage = String(body.stage || '');
+      const labels = { product: 'Página do produto', profile: 'Identificação', shipping: 'Entrega', payment: 'Pagamento' };
+      if (!labels[stage]) return response.status(422).json({ error: 'Etapa inválida' });
+      if (!state.funnelStages.includes(stage)) {
+        try {
+          await recordFunnelStage({ request, stage, detail: labels[stage], value: 0 });
+          state.funnelStages.push(stage);
+        } catch (error) {
+          console.error('Erro ao registrar etapa do funil:', error);
         }
       }
     } else if (action === 'quantity') {

@@ -1464,10 +1464,11 @@
     function evCoords(ev, index) {
       // 1. Coordenadas reais salvas pelo visitor (via ipinfo.io no index.html)
       const utm = parseUtm(ev.utm);
+      if (utm.human !== true) return null;
       if (utm.geo_lat && utm.geo_lng) {
-        const j = () => (Math.random() - 0.5) * 0.08;
-        return [parseFloat(utm.geo_lng) + j(), parseFloat(utm.geo_lat) + j()];
+        return [parseFloat(utm.geo_lng), parseFloat(utm.geo_lat)];
       }
+      return null;
       // 2. Fallback: CEP-based lookup para eventos de frete
       if (ev.type === "shipping" && ev.detail) {
         const cepMatch = ev.detail.match(/\d{5}-?\d{3}|\d{8}/);
@@ -1493,12 +1494,12 @@
         el.className = `pulse-marker-live live-${ev.type}`;
         // Após 3 pulsos (~3s), vira o marker padrão
         setTimeout(() => {
-          if (ev.type === 'visit')    el.className = 'pulse-marker-visit';
+          if (ev.type === 'visit' || ev.type === 'funnel_product') el.className = 'pulse-marker-visit';
           else if (ev.type === 'purchase') el.className = 'pulse-marker-purchase';
           else                        el.className = 'pulse-marker-shipping';
         }, 3200);
       } else {
-        if (ev.type === "visit")     el.className = 'pulse-marker-visit';
+        if (ev.type === "visit" || ev.type === "funnel_product") el.className = 'pulse-marker-visit';
         else if (ev.type === "purchase") el.className = 'pulse-marker-purchase';
         else                         el.className = 'pulse-marker-shipping';
       }
@@ -1527,8 +1528,9 @@
       if (!events || !events.length) return;
 
       events.forEach((ev, index) => {
-        if (ev.type === "newsletter") return;
+        if (!["visit", "purchase", "shipping", "funnel_product"].includes(ev.type)) return;
         const finalCoords = evCoords(ev, index);
+        if (!finalCoords) return;
         const el = makeMarkerEl(ev, false);
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat(finalCoords)
@@ -1540,8 +1542,9 @@
 
     // Adiciona UM único marker ao vivo sem limpar os existentes
     function addRealtimeMarker(ev) {
-      if (!map || !ev || ev.type === "newsletter") return;
+      if (!map || !ev || !["visit", "purchase", "shipping", "funnel_product"].includes(ev.type)) return;
       const finalCoords = evCoords(ev, activeMarkers.length);
+      if (!finalCoords) return;
       const el = makeMarkerEl(ev, true);
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat(finalCoords)
@@ -1638,6 +1641,7 @@
     }
 
     let metricsLoading = false;
+    let latestFunnelCounts = { product: 0, cart: 0, profile: 0, shipping: 0, payment: 0 };
     async function loadLocalMetrics() {
       if (metricsLoading) return;
       metricsLoading = true;
@@ -1655,6 +1659,7 @@
               <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px 0;">Nenhum evento registrado ainda. Navegue na página de vendas para gerar interações.</td>
             </tr>
           `;
+          latestFunnelCounts = { product: 0, cart: 0, profile: 0, shipping: 0, payment: 0 };
           updateKPIs(0, 0, 0);
           renderMapMarkers([]);
           const campaignsBody = document.getElementById("campaigns-body");
@@ -1674,8 +1679,13 @@
         let shippingsCount = 0;
         let checkoutsCount = 0;
         let totalRevenue = 0;
+        latestFunnelCounts = { product: 0, cart: 0, profile: 0, shipping: 0, payment: 0 };
 
         events.forEach(ev => {
+          if (ev.type.indexOf('funnel_') === 0) {
+            const stage = ev.type.slice(7);
+            if (Object.prototype.hasOwnProperty.call(latestFunnelCounts, stage)) latestFunnelCounts[stage]++;
+          }
           if (ev.type === "visit") visitsCount++;
           if (ev.type === "shipping") shippingsCount++;
           if (ev.type === "checkout") checkoutsCount++;
@@ -1733,6 +1743,32 @@
     }
 
     function updateFunnel(visits, shippings, checkouts) {
+      const oldValue = document.getElementById("funnel-visits-value");
+      const container = document.getElementById('funnel-five-stages') || (oldValue && oldValue.closest('.funnel-container'));
+      if (!container) return;
+      container.id = 'funnel-five-stages';
+      const stages = [
+        { key:'product', title:'Página do Produto', subtitle:'Acessos humanos na oferta', icon:'eye' },
+        { key:'cart', title:'Sacola', subtitle:'Checkout ativado', icon:'shopping-bag' },
+        { key:'profile', title:'Identificação', subtitle:'Dados do cliente', icon:'user' },
+        { key:'shipping', title:'Entrega', subtitle:'Endereço confirmado', icon:'truck-fast' },
+        { key:'payment', title:'Pagamento', subtitle:'Etapa Pix aberta', icon:'card' }
+      ];
+      const icons = {
+        eye:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/></svg>',
+        'shopping-bag':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 8h14l-1 13H6L5 8Z" stroke="currentColor" stroke-width="1.7"/><path d="M9 10V6a3 3 0 0 1 6 0v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+        user:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+        'truck-fast':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h11v11H3V6Zm11 4h4l3 4v3h-7v-7Z" stroke="currentColor" stroke-width="1.7"/><circle cx="7" cy="19" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="19" r="2" stroke="currentColor" stroke-width="1.7"/></svg>',
+        card:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M2 10h20M6 15h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'
+      };
+      const base = latestFunnelCounts.product || 0;
+      container.style.gap = '12px';
+      container.innerHTML = stages.map((stage, index) => {
+        const value = latestFunnelCounts[stage.key] || 0;
+        const rate = base ? Math.min(100, value / base * 100) : 0;
+        return `<div class="funnel-step" style="position:relative;display:flex;flex-direction:column;gap:8px;padding:13px 15px;border-radius:12px;background:#fff;border:1px solid var(--border-color)"><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:8px;background:var(--brand-teal-light);display:flex;align-items:center;justify-content:center;color:var(--brand-navy)">${icons[stage.icon]}</div><div><div style="font-weight:700;font-family:var(--font-title);font-size:13px;color:var(--brand-navy)">${stage.title}</div><div style="font-size:11px;color:var(--text-muted)">${stage.subtitle}</div></div></div><div style="text-align:right"><div style="font-size:16px;font-weight:800;font-family:var(--font-title);color:var(--brand-navy)">${value}</div><span class="badge badge-blue" style="font-size:9px;padding:2px 6px">${index === 0 ? '100' : rate.toFixed(0)}%</span></div></div><div style="width:100%;height:5px;background:#e8e8e8;border-radius:3px;overflow:hidden"><div style="width:${index === 0 && base ? 100 : rate}%;height:100%;background:linear-gradient(90deg,var(--brand-teal),#3cd6ff);border-radius:3px;transition:width .8s ease"></div></div>${index < stages.length - 1 ? '<div style="position:absolute;bottom:-11px;left:32px;width:2px;height:10px;background:var(--border-color)"></div>' : ''}</div>`;
+      }).join('');
+      return;
       const visitsVal = document.getElementById("funnel-visits-value");
       const shippingVal = document.getElementById("funnel-shipping-value");
       const purchasesVal = document.getElementById("funnel-purchases-value");
@@ -2064,6 +2100,11 @@
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creamy_events' }, payload => {
           const ev = payload.new;
           if (!ev) return;
+          if (ev.type.indexOf('funnel_') === 0) {
+            addRealtimeMarker(ev);
+            loadLocalMetrics();
+            return;
+          }
 
           // Atualiza mapa incrementalmente (sem recarregar tudo)
           addRealtimeMarker(ev);

@@ -328,6 +328,7 @@
       var steps = document.querySelectorAll('.dot-progress-bar');
       if (steps[2]) steps[2].click();
       window.location.hash = '#/orderform/shipping';
+      cartRequest('stage', { stage: 'shipping' }).catch(function () {});
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -339,6 +340,7 @@
       var steps = document.querySelectorAll('.dot-progress-bar');
       if (steps[3]) steps[3].click();
       window.location.hash = '#/orderform/payment';
+      cartRequest('stage', { stage: 'payment' }).catch(function () {});
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -379,6 +381,7 @@
       orderform.style.cssText = 'display:flex;opacity:1;position:relative;margin-left:0;width:100%';
       if (upsell) upsell.style.display = 'none';
       window.location.hash = '#/orderform/profile';
+      cartRequest('stage', { stage: 'profile' }).catch(function () {});
       var steps = document.querySelectorAll('.dot-progress-bar');
       if (steps[1]) steps[1].click();
       window.scrollTo({ top: 0, behavior: 'smooth' });

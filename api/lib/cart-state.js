@@ -55,6 +55,7 @@ export function readCart(request) {
     shipping: raw.shipping && typeof raw.shipping === 'object' ? raw.shipping : null,
     addonIds: Array.isArray(raw.addonIds) ? raw.addonIds.map(String).filter(id => CATALOG.addons.has(id)) : [],
     lastActivationToken: typeof raw.lastActivationToken === 'string' ? raw.lastActivationToken.slice(0, 100) : null,
+    funnelStages: Array.isArray(raw.funnelStages) ? raw.funnelStages.map(String).filter(stage => ['product', 'cart', 'profile', 'shipping', 'payment'].includes(stage)) : [],
   };
 }
 

@@ -5,6 +5,11 @@
     var increment = document.querySelector('.creamy-product-quantity-0-x-quantityButtonIncrement');
     if (!input || !decrement || !increment) return;
 
+    fetch('/api/cart', {
+      method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'stage', stage: 'product' })
+    }).catch(function () {});
+
     function quantity() {
       return Math.max(1, Math.min(99999, parseInt(input.value, 10) || 1));
     }
