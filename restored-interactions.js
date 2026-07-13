@@ -26,7 +26,7 @@
     }, true);
     input.addEventListener('change', function () { render(quantity()); });
 
-    document.addEventListener('click', function (event) {
+    document.addEventListener('click', async function (event) {
       var candidateButton = event.target && event.target.closest ? event.target.closest('button') : null;
       var buyButton = candidateButton && candidateButton.querySelector('.vtex-add-to-cart-button-0-x-buttonText--pdp-buy-button-fac-0001')
         ? candidateButton
@@ -34,7 +34,13 @@
       if (!buyButton) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      localStorage.setItem('creamyCartQuantity', String(quantity()));
+      var cartResponse = await fetch('/api/cart', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'quantity', quantity: quantity() })
+      });
+      if (!cartResponse.ok) return;
       window.location.href = 'Creamy%20-%20Finalizar%20compra.html#/orderform';
     }, true);
     render(quantity());

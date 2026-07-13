@@ -1061,7 +1061,6 @@
           <h2 class="panel-title">Lista de Logs e Conversões Locais</h2>
           <div class="panel-actions" style="display: flex; gap: 10px;">
             <button class="btn btn-secondary btn-danger" id="btn-clear-events">Limpar Todos os Dados</button>
-            <button class="btn btn-secondary" id="btn-mock-events" style="background-color: var(--brand-navy); color: #fff;">Gerar Dados de Teste</button>
           </div>
         </div>
         
@@ -1177,7 +1176,7 @@
 
           <div class="form-group">
             <label class="form-label">Webhook URL (Notificação de Pagamentos)</label>
-            <input class="form-input" type="text" value="http://localhost:8000/api/webhook/pix" readonly style="background-color: #f2f4f5; font-family: monospace; font-size: 12px; border-color: var(--border-color);">
+            <input class="form-input" id="gateway-webhook-url" type="text" readonly style="background-color: #f2f4f5; font-family: monospace; font-size: 12px; border-color: var(--border-color);">
           </div>
 
           <button class="btn" id="btn-save-gateway">Salvar Integração</button>
@@ -1194,7 +1193,7 @@
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span>Retorno do Webhook:</span>
-              <span class="badge badge-green">Conectado (Mock)</span>
+              <span class="badge badge-grey">Aguardando webhook real</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span>Tempo de Expiração PIX:</span>
@@ -1374,6 +1373,8 @@
     const SUPABASE_URL = "https://nlawvbnenzyjknmsqlwa.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sYXd2Ym5lbnp5amtubXNxbHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjg3NTcsImV4cCI6MjA5MTg0NDc1N30.gEr2isb_ibqpFQBXpPDcqai0_szbE3bucOt-oiqv0Uo";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const gatewayWebhookUrl = document.getElementById("gateway-webhook-url");
+    if (gatewayWebhookUrl) gatewayWebhookUrl.value = window.location.origin + "/api/webhook/pix";
 
     // ==========================================
     // 1. SISTEMA DE SELEÇÃO DE ABAS (SIDEBAR)
@@ -1559,7 +1560,6 @@
     // ==========================================
     const eventsBody = document.getElementById("events-body");
     const btnClearEvents = document.querySelectorAll("#btn-clear-events");
-    const btnMockEvents = document.querySelectorAll("#btn-mock-events");
 
     const kpiVisits = document.getElementById("kpi-visits");
     const kpiPurchases = document.getElementById("kpi-purchases");
@@ -1783,83 +1783,6 @@
       });
     });
 
-    btnMockEvents.forEach(btn => {
-      btn.addEventListener("click", async function() {
-        if (!confirm("Deseja gerar métricas de teste no Supabase?")) return;
-        const now = new Date();
-        const mockData = [];
-        const totalVisits = 65;
-        const totalPurchases = 5;
-        
-        const mockUtms = [
-          { source: "facebook", medium: "cpc", campaign: "black-friday" },
-          { source: "google", medium: "search", campaign: "branding" },
-          { source: "instagram", medium: "stories", campaign: "influenciador" },
-          null
-        ];
-
-        for (let i = 0; i < totalVisits; i++) {
-          const timeOffset = Math.random() * 24 * 60 * 60 * 1000;
-          const randomUtm = mockUtms[Math.floor(Math.random() * mockUtms.length)];
-          const item = {
-            id: "mock_" + i + "_" + Math.random().toString(36).substr(2, 5),
-            timestamp: new Date(now - timeOffset).toISOString(),
-            type: "visit",
-            detail: "Acesso à página do Kit Firmador (Simulado)",
-            value: 0
-          };
-          if (randomUtm) item.utm = randomUtm;
-          mockData.push(item);
-        }
-
-        for (let i = 0; i < 10; i++) {
-          const timeOffset = Math.random() * 24 * 60 * 60 * 1000;
-          const ceps = ["01311-200", "22021-001", "80020-100", "90020-009", "30140-061", "40020-100", "50020-100", "70020-100"];
-          const randomCep = ceps[Math.floor(Math.random() * ceps.length)];
-          mockData.push({
-            id: "mock_cep_" + i + "_" + Math.random().toString(36).substr(2, 5),
-            timestamp: new Date(now - timeOffset).toISOString(),
-            type: "shipping",
-            detail: "Cálculo de frete para o CEP: " + randomCep + " (Simulado)",
-            value: 0
-          });
-        }
-
-        for (let i = 0; i < 4; i++) {
-          const timeOffset = Math.random() * 24 * 60 * 60 * 1000;
-          const emails = ["comprador@email.com", "sucesso@trafego.com", "lead1@gmail.com", "vendas@loja.com"];
-          mockData.push({
-            id: "mock_news_" + i + "_" + Math.random().toString(36).substr(2, 5),
-            timestamp: new Date(now - timeOffset).toISOString(),
-            type: "newsletter",
-            detail: "Cadastro de newsletter: " + emails[i] + " (Simulado)",
-            value: 0
-          });
-        }
-
-        for (let i = 0; i < totalPurchases; i++) {
-          const timeOffset = Math.random() * 24 * 60 * 60 * 1000;
-          const qty = Math.floor(Math.random() * 2) + 1;
-          const randomUtm = mockUtms[Math.floor(Math.random() * (mockUtms.length - 1))];
-          const purchaseItem = {
-            id: "mock_purch_" + i + "_" + Math.random().toString(36).substr(2, 5),
-            timestamp: new Date(now - timeOffset).toISOString(),
-            type: "purchase",
-            detail: `Clique em Comprar - ${qty}x Kit Firmador (Simulado)`,
-            value: 439.97 * qty
-          };
-          if (randomUtm) purchaseItem.utm = randomUtm;
-          mockData.push(purchaseItem);
-        }
-
-        const { error } = await sb.from("creamy_events").insert(mockData);
-        if (error) showToast("Erro ao gerar métricas: " + error.message, 'error');
-        else {
-          showToast("Métricas simuladas inseridas com sucesso!", 'success');
-          loadLocalMetrics();
-        }
-      });
-    });
 
     // ==========================================
     // 4. GERADOR DE LINKS UTM E COPIADOR

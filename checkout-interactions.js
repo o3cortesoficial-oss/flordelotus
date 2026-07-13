@@ -1,12 +1,27 @@
 (function () {
-  function applyStoredCartQuantity(nextQuantity) {
-    var quantity = Math.max(1, Math.min(99999, parseInt(nextQuantity, 10) || parseInt(localStorage.getItem('creamyCartQuantity'), 10) || 1));
-    localStorage.setItem('creamyCartQuantity', String(quantity));
-    var subtotal = 463.13 * quantity;
-    var couponApplied = localStorage.getItem('creamyCouponApplied') === 'true';
-    var regularTotal = 439.97 * quantity;
-    var total = couponApplied ? regularTotal * 0.5 : regularTotal;
-    var discount = subtotal - total;
+  var serverCart = null;
+
+  async function cartRequest(action, payload) {
+    var response = await fetch('/api/cart', {
+      method: action ? 'POST' : 'GET',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: action ? JSON.stringify(Object.assign({ action: action }, payload || {})) : undefined
+    });
+    var data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Falha ao atualizar o pedido');
+    serverCart = data;
+    return data;
+  }
+
+  async function applyStoredCartQuantity(nextQuantity) {
+    var cart = nextQuantity == null
+      ? await cartRequest()
+      : await cartRequest('quantity', { quantity: nextQuantity });
+    var quantity = cart.quantity;
+    var subtotal = cart.totals.subtotal / 100;
+    var total = cart.totals.total / 100;
+    var discount = cart.totals.discount / 100;
     function money(value) {
       return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -51,15 +66,15 @@
       var confirm = document.createElement('button');
       confirm.type = 'button';
       confirm.className = 'restored-coupon-apply';
-      confirm.textContent = localStorage.getItem('creamyCouponApplied') === 'true' ? 'Aplicado' : 'Confirmar';
-      confirm.disabled = localStorage.getItem('creamyCouponApplied') === 'true';
+      confirm.textContent = serverCart && serverCart.coupon ? 'Aplicado' : 'Confirmar';
+      confirm.disabled = !!(serverCart && serverCart.coupon);
       confirm.style.cssText = 'height:40px;border:0;border-radius:100px;padding:0 16px;background:#194a97;color:#fff;font-weight:700;cursor:pointer;';
-      confirm.addEventListener('click', function () {
-        localStorage.setItem('creamyCouponApplied', 'true');
+      confirm.addEventListener('click', async function () {
+        await cartRequest('coupon', { code: 'MEUKIT50OFF' });
         confirm.textContent = 'Aplicado';
         confirm.disabled = true;
         confirm.style.background = '#3e7dbf';
-        applyStoredCartQuantity();
+        await applyStoredCartQuantity();
       });
       wrapper.appendChild(input);
       wrapper.appendChild(confirm);
@@ -71,7 +86,7 @@
       event.stopImmediatePropagation();
       showCouponForm();
     }, true);
-    if (localStorage.getItem('creamyCouponApplied') === 'true') showCouponForm();
+    if (serverCart && serverCart.coupon) showCouponForm();
   }
 
   function initCheckoutQuantity() {
@@ -151,6 +166,7 @@
   }
 
   function initShipping() {
+    var shippingState = serverCart && serverCart.shipping ? serverCart.shipping : null;
     var delivery = document.querySelector('.srp-toggle__delivery');
     var pickup = document.querySelector('.srp-toggle__pickup');
     var frame = document.querySelector('.srp-toggle__current');
@@ -184,30 +200,6 @@
       status.style.fontWeight = '600';
     }
 
-    function lookupCepJsonp(cep) {
-      return new Promise(function (resolve, reject) {
-        var callbackName = 'restoredViaCep' + Date.now();
-        var script = document.createElement('script');
-        var timer = setTimeout(function () {
-          cleanup();
-          reject(new Error('cep timeout'));
-        }, 6000);
-        function cleanup() {
-          clearTimeout(timer);
-          script.remove();
-          try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
-        }
-        window[callbackName] = function (data) {
-          cleanup();
-          if (!data || data.erro) reject(new Error('invalid cep'));
-          else resolve(data);
-        };
-        script.onerror = function () { cleanup(); reject(new Error('cep network error')); };
-        script.src = 'https://viacep.com.br/ws/' + cep + '/json/?callback=' + callbackName;
-        document.head.appendChild(script);
-      });
-    }
-
     function renderShippingOptions(address) {
       if (!status) return;
       status.innerHTML = '';
@@ -219,74 +211,30 @@
       option.innerHTML = '<span><input type="radio" name="restored-shipping-rate" checked style="margin-right:8px">Entrega padrão<br><small style="margin-left:22px;color:#676767">Prazo estimado: 3 a 7 dias úteis</small></span><strong style="color:#194a97">Grátis</strong>';
       status.appendChild(title);
       status.appendChild(option);
-      localStorage.setItem('creamyShippingRate', 'standard-free');
     }
 
     async function findNearestStore() {
-      var savedAddress = localStorage.getItem('creamyShippingAddress');
+      var savedAddress = shippingState && shippingState.address;
       if (!savedAddress) {
         showStatus('Informe seu CEP em “Receba em Casa” antes de procurar uma loja.', true);
         return;
       }
       showLoading('Buscando a loja Creamy mais próxima...');
       try {
-        var geocodeResponse = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=' + encodeURIComponent(savedAddress));
-        var geocode = await geocodeResponse.json();
-        if (!geocodeResponse.ok || !geocode.length) throw new Error('address lookup failed');
-        var lookupLat = Number(geocode[0].lat);
-        var lookupLon = Number(geocode[0].lon);
-        var storeQuery = '[out:json][timeout:15];(node["name"~"Creamy",i](around:50000,' + lookupLat + ',' + lookupLon + ');way["name"~"Creamy",i](around:50000,' + lookupLat + ',' + lookupLon + '););out center tags;';
-        var storeResponse = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(storeQuery));
-        var storeData = await storeResponse.json();
-        if (!storeResponse.ok || !(storeData.elements || []).length) throw new Error('no store');
-        var nearest = storeData.elements[0];
-        var nearestTags = nearest.tags || {};
-        var nearestAddress = [nearestTags['addr:street'], nearestTags['addr:housenumber'], nearestTags['addr:suburb'], nearestTags['addr:city']].filter(Boolean).join(', ');
-        var nearestMessage = 'Loja mais próxima: ' + (nearestTags.name || 'Creamy') + (nearestAddress ? ' — ' + nearestAddress : '') + '.';
-        localStorage.setItem('creamyPickupStore', nearestMessage);
-        showStatus(nearestMessage);
+        var response = await fetch('/api/stores?address=' + encodeURIComponent(savedAddress));
+        var store = await response.json();
+        if (!response.ok) throw new Error(store.error || 'Nenhuma loja próxima');
+        var message = 'Loja mais próxima: ' + store.name + (store.address ? ' — ' + store.address : '') + ' (' + store.distanceKm + ' km).';
+        shippingState = { method: 'pickup', address: savedAddress, store: message };
+        await cartRequest('shipping', { shipping: shippingState });
+        showStatus(message);
       } catch (_) {
         showStatus('Não encontramos uma loja Creamy próxima. Só será possível receber em casa.', true);
       }
-      return;
-      showLoading('Buscando a loja Creamy mais próxima...');
-      if (!navigator.geolocation) {
-        showStatus('Não encontramos uma loja próxima. Só será possível receber em casa.', true);
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(async function (position) {
-        try {
-          var lat = position.coords.latitude;
-          var lon = position.coords.longitude;
-          var query = '[out:json][timeout:15];(node["name"~"Creamy",i](around:50000,' + lat + ',' + lon + ');way["name"~"Creamy",i](around:50000,' + lat + ',' + lon + '););out center tags;';
-          var response = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
-          if (!response.ok) throw new Error('store lookup failed');
-          var data = await response.json();
-          var stores = (data.elements || []).map(function (store) {
-            var storeLat = store.lat || (store.center && store.center.lat);
-            var storeLon = store.lon || (store.center && store.center.lon);
-            var distance = Math.hypot((storeLat - lat) * 111, (storeLon - lon) * 111 * Math.cos(lat * Math.PI / 180));
-            return { store: store, distance: distance };
-          }).sort(function (a, b) { return a.distance - b.distance; });
-          if (!stores.length) {
-            showStatus('Não encontramos uma loja Creamy próxima da sua localização. Só será possível receber em casa.', true);
-            return;
-          }
-          var tags = stores[0].store.tags || {};
-          var address = [tags['addr:street'], tags['addr:housenumber'], tags['addr:suburb'], tags['addr:city']].filter(Boolean).join(', ');
-          var storeMessage = 'Loja mais próxima: ' + (tags.name || 'Creamy') + (address ? ' — ' + address : '') + '.';
-          localStorage.setItem('creamyPickupStore', storeMessage);
-          showStatus(storeMessage);
-        } catch (_) {
-          showStatus('Não foi possível localizar uma loja Creamy próxima. Só será possível receber em casa.', true);
-        }
-      }, function () {
-        showStatus('Localização não autorizada. Só será possível receber em casa.', true);
-      }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
     }
 
     if (delivery && pickup && frame) {
-      function choose(mode, triggerSearch) {
+      async function choose(mode, triggerSearch) {
         var isPickup = mode === 'pickup';
         frame.style.transition = 'transform .3s ease';
         frame.style.transform = isPickup ? 'translateX(100%)' : 'translateX(0)';
@@ -307,16 +255,15 @@
         pickup.style.borderRadius = '100px';
         delivery.style.boxShadow = !isPickup ? '0 2px 5px rgba(0,0,0,.16)' : 'none';
         pickup.style.boxShadow = isPickup ? '0 2px 5px rgba(0,0,0,.16)' : 'none';
-        localStorage.setItem('creamyShippingMethod', mode);
         if (shippingContainer) shippingContainer.style.display = isPickup ? 'none' : 'flex';
         if (isPickup && triggerSearch) findNearestStore();
-        else if (isPickup && status) status.textContent = localStorage.getItem('creamyPickupStore') || 'Clique novamente em “Retire Numa Loja” para buscar uma unidade próxima.';
-        else if (status && localStorage.getItem('creamyShippingAddress')) renderShippingOptions(localStorage.getItem('creamyShippingAddress'));
+        else if (isPickup && status) status.textContent = (shippingState && shippingState.store) || 'Clique novamente em “Retire Numa Loja” para buscar uma unidade próxima.';
+        else if (status && shippingState && shippingState.address) renderShippingOptions(shippingState.address);
         else if (status) status.textContent = '';
       }
       delivery.addEventListener('click', function () { choose('delivery', false); }, true);
       pickup.addEventListener('click', function () { choose('pickup', true); }, true);
-      choose(localStorage.getItem('creamyShippingMethod') === 'pickup' ? 'pickup' : 'delivery', false);
+      choose(shippingState && shippingState.method === 'pickup' ? 'pickup' : 'delivery', false);
     }
 
     var input = document.querySelector('.custom-shipping-input');
@@ -342,9 +289,9 @@
           if (!queryInput.value.trim()) return;
           showLoading('Buscando seu CEP...');
           try {
-            var response = await fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=br&q=' + encodeURIComponent(queryInput.value.trim()));
-            var results = await response.json();
-            var postalCode = results[0] && results[0].address && results[0].address.postcode;
+            var response = await fetch('/api/address-search?q=' + encodeURIComponent(queryInput.value.trim()));
+            var result = await response.json();
+            var postalCode = result.cep;
             if (!response.ok || !postalCode) throw new Error('postal code not found');
             var digits = postalCode.replace(/\D/g, '').slice(0, 8);
             input.value = digits.slice(0, 5) + '-' + digits.slice(5);
@@ -375,7 +322,8 @@
         var address = await cepResponse.json();
         if (!cepResponse.ok || !address || address.erro) throw new Error('invalid cep');
         var fullAddress = [address.logradouro, address.bairro, address.localidade, address.uf].filter(Boolean).join(', ');
-        localStorage.setItem('creamyShippingAddress', fullAddress);
+        shippingState = { method: 'delivery', cep: cep, address: fullAddress };
+        await cartRequest('shipping', { shipping: shippingState });
         showStatus('Entrega em: ' + fullAddress + '.');
         renderShippingOptions(fullAddress);
         button.textContent = 'Calculado';
@@ -389,17 +337,17 @@
 
   function initGifts() {
     var gifts = document.querySelectorAll('.available-gift-item');
-    function updateGiftInCart(gift, selected) {
+    async function updateGiftInCart(gift, selected) {
       var currentRow = document.querySelector('.restored-gift-cart-item');
       if (currentRow) currentRow.remove();
       if (!selected || !gift) {
-        localStorage.removeItem('creamySelectedGift');
+        await cartRequest('gift', { giftId: null });
         return;
       }
       var name = (gift.querySelector('.product-name > span')?.textContent || gift.querySelector('.product-name')?.textContent || gift.textContent || '').trim();
       var image = gift.querySelector('.product-image img')?.getAttribute('src') || '';
       var id = gift.getAttribute('data-item-id') || name;
-      localStorage.setItem('creamySelectedGift', JSON.stringify({ id: id, name: name, image: image }));
+      await cartRequest('gift', { giftId: id });
       var body = document.querySelector('.cart-items tbody');
       if (!body) return;
       var row = document.createElement('tr');
@@ -470,6 +418,14 @@
         });
       })(gifts[i]);
     }
+    if (serverCart && serverCart.giftId) {
+      for (var selectedIndex = 0; selectedIndex < gifts.length; selectedIndex++) {
+        if (gifts[selectedIndex].getAttribute('data-item-id') === serverCart.giftId) {
+          gifts[selectedIndex].click();
+          break;
+        }
+      }
+    }
   }
 
   function initProgress() {
@@ -496,8 +452,8 @@
     }
   }
 
-  function init() {
-    applyStoredCartQuantity();
+  async function init() {
+    await applyStoredCartQuantity();
     initCheckoutQuantity();
     initCoupon();
     initCarousel();
