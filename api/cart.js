@@ -33,6 +33,10 @@ export default async function handler(request, response) {
       const giftId = String(body.giftId || '');
       if (giftId && !CATALOG.gifts.has(giftId)) return response.status(422).json({ error: 'Brinde inválido' });
       state.giftId = giftId || null;
+    } else if (action === 'addon') {
+      const addonId = String(body.addonId || '');
+      if (!CATALOG.addons.has(addonId)) return response.status(422).json({ error: 'Produto adicional inválido' });
+      if (!state.addonIds.includes(addonId)) state.addonIds.push(addonId);
     } else if (action === 'shipping') {
       if (!body.shipping || !['delivery', 'pickup'].includes(body.shipping.method)) {
         return response.status(422).json({ error: 'Entrega inválida' });
