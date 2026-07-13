@@ -4,8 +4,8 @@ export const CATALOG = Object.freeze({
   product: {
     id: 'kit-firmador',
     name: 'Kit Firmador',
-    listPrice: 46313,
-    sellingPrice: 43997,
+    listPrice: 49996,
+    sellingPrice: 47496,
   },
   coupon: {
     code: 'MEUKIT50OFF',

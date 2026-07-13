@@ -22,6 +22,8 @@
     var subtotal = cart.totals.subtotal / 100;
     var total = cart.totals.total / 100;
     var discount = cart.totals.discount / 100;
+    var mainListTotal = (cart.product.listPrice * quantity) / 100;
+    var mainSellingTotal = (cart.product.sellingPrice * quantity) / 100;
     function money(value) {
       return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -32,9 +34,9 @@
       quantityInputs[i].setAttribute('value', String(quantity));
     }
     var itemPrices = document.querySelectorAll('.new-product-price:not(.restored-gift-price):not(.restored-addon-price)');
-    for (var p = 0; p < itemPrices.length; p++) itemPrices[p].innerHTML = money(total) + '<span class="pix-tag-checkout pix-tag-added"> no PIX</span>';
+    for (var p = 0; p < itemPrices.length; p++) itemPrices[p].innerHTML = money(mainSellingTotal) + '<span class="pix-tag-checkout pix-tag-added"> no PIX</span>';
     var oldPrices = document.querySelectorAll('.old-product-price:not(.restored-addon-old-price)');
-    for (var o = 0; o < oldPrices.length; o++) oldPrices[o].textContent = money(subtotal);
+    for (var o = 0; o < oldPrices.length; o++) oldPrices[o].textContent = money(mainListTotal);
 
     var itemRow = document.querySelector('.summary-totalizers tr.Items .monetary, .totalizers-list tr.Items .monetary');
     var discountRow = document.querySelector('.summary-totalizers tr.Discounts .monetary, .totalizers-list tr.Discounts .monetary');
