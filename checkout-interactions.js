@@ -107,8 +107,26 @@
       row.innerHTML = '<td class="product-image">' + (image ? '<img src="' + image.src.replace(/"/g, '&quot;') + '" alt="">' : '') + '</td>' +
         '<td class="product-name"><span>' + addon.name + '</span><small style="display:block;color:#194a97;font-weight:600;margin-top:4px">Adicionado ao carrinho</small></td>' +
         '<td class="shipping-date empty"></td><td class="product-price"><span class="old-product-price restored-addon-old-price" style="display:block">' + money(addon.listPrice) + '</span><span class="new-product-price restored-addon-price">' + money(addon.sellingPrice) + ' <span class="pix-tag-checkout pix-tag-added">no PIX</span></span></td>' +
-        '<td class="quantity"><span>1</span></td><td class="quantity-price"></td><td class="item-remove"></td>';
+        '<td class="quantity"><span>1</span></td><td class="quantity-price"></td><td class="item-remove"><button type="button" class="restored-addon-remove" aria-label="Remover ' + addon.name.replace(/"/g, '&quot;') + '" style="border:0;background:transparent;color:#999;font-size:28px;line-height:1;cursor:pointer;padding:6px">×</button></td>';
       body.appendChild(row);
+      row.querySelector('.restored-addon-remove').addEventListener('click', async function () {
+        var removeButton = this;
+        removeButton.disabled = true;
+        try {
+          await cartRequest('addon-remove', { addonId: addon.id });
+          row.remove();
+          var source = document.querySelector('.beon-showcase__item[data-product-sku="' + addon.id + '"]');
+          var sourceButton = source && source.querySelector('.beon-button--primary');
+          if (sourceButton) {
+            sourceButton.classList.remove('restored-addon-added');
+            sourceButton.style.background = '';
+            sourceButton.setAttribute('aria-label', 'Adicionar produto ao carrinho');
+          }
+          await applyStoredCartQuantity();
+        } catch (_) {
+          removeButton.disabled = false;
+        }
+      });
     }
 
     var items = document.querySelectorAll('#beon-element-1735c46e-7cfe-48ef-a01d-f2812c583ff4 .beon-showcase__item');
@@ -158,6 +176,7 @@
     var cart = document.querySelector('.cart-template.full-cart');
     var orderform = document.querySelector('.orderform-template');
     var holder = orderform && orderform.querySelector('.orderform-template-holder');
+    var upsell = document.querySelector('#beon-element-1735c46e-7cfe-48ef-a01d-f2812c583ff4');
     if (!advance || !cart || !orderform || !holder) return;
 
     if (!holder.querySelector('.restored-identification')) {
@@ -170,8 +189,35 @@
         '<label>Sobrenome<input required autocomplete="family-name" name="lastName" style="display:block;width:100%;height:46px;margin-top:6px;border:1px solid #cbcbcb;border-radius:100px;padding:0 16px;box-sizing:border-box"></label>' +
         '<label>CPF<input required inputmode="numeric" maxlength="14" name="document" style="display:block;width:100%;height:46px;margin-top:6px;border:1px solid #cbcbcb;border-radius:100px;padding:0 16px;box-sizing:border-box"></label>' +
         '<label>Celular<input required type="tel" autocomplete="tel" name="phone" style="display:block;width:100%;height:46px;margin-top:6px;border:1px solid #cbcbcb;border-radius:100px;padding:0 16px;box-sizing:border-box"></label>' +
+        '<button type="submit" class="restored-identification-continue" style="grid-column:1/-1;height:52px;border:0;border-radius:100px;background:#3e7dbf;color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px">Continuar</button>' +
         '</form></section>';
     }
+
+    var identification = holder.querySelector('.restored-identification');
+    var identificationForm = holder.querySelector('.restored-identification-form');
+    var deliveryStage = document.createElement('section');
+    deliveryStage.className = 'restored-delivery-stage';
+    deliveryStage.style.cssText = 'display:none;background:#fff;border-radius:16px;padding:24px;box-sizing:border-box;width:100%;max-width:720px;margin:0 auto';
+    deliveryStage.innerHTML = '<h2 style="margin:0 0 8px;color:#194a97;font-size:24px">Entrega</h2><p style="margin:0 0 22px;color:#676767">Escolha como deseja receber seu pedido.</p><div class="restored-delivery-content"></div>';
+    holder.appendChild(deliveryStage);
+
+    identificationForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!identificationForm.reportValidity()) return;
+      identification.style.display = 'none';
+      deliveryStage.style.display = 'block';
+      var shipping = document.querySelector('#shipping-preview-container');
+      var deliveryContent = deliveryStage.querySelector('.restored-delivery-content');
+      if (shipping && deliveryContent && !deliveryContent.contains(shipping)) {
+        shipping.classList.remove('sf-hidden');
+        shipping.style.display = 'block';
+        deliveryContent.appendChild(shipping);
+      }
+      var steps = document.querySelectorAll('.dot-progress-bar');
+      if (steps[2]) steps[2].click();
+      window.location.hash = '#/orderform/shipping';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
     advance.addEventListener('click', function (event) {
       event.preventDefault();
@@ -181,11 +227,14 @@
       orderform.classList.remove('inactive', 'sf-hidden');
       orderform.classList.add('active');
       orderform.style.cssText = 'display:flex;opacity:1;position:relative;margin-left:0;width:100%';
+      if (upsell) upsell.style.display = 'none';
       window.location.hash = '#/orderform/profile';
       var steps = document.querySelectorAll('.dot-progress-bar');
       if (steps[1]) steps[1].click();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, true);
+
+    if (window.location.hash.indexOf('/profile') !== -1) advance.click();
   }
 
   function initCheckoutQuantity() {

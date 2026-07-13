@@ -37,6 +37,9 @@ export default async function handler(request, response) {
       const addonId = String(body.addonId || '');
       if (!CATALOG.addons.has(addonId)) return response.status(422).json({ error: 'Produto adicional inválido' });
       if (!state.addonIds.includes(addonId)) state.addonIds.push(addonId);
+    } else if (action === 'addon-remove') {
+      const addonId = String(body.addonId || '');
+      state.addonIds = state.addonIds.filter(id => id !== addonId);
     } else if (action === 'shipping') {
       if (!body.shipping || !['delivery', 'pickup'].includes(body.shipping.method)) {
         return response.status(422).json({ error: 'Entrega inválida' });
