@@ -1637,7 +1637,10 @@
       }
     }
 
+    let metricsLoading = false;
     async function loadLocalMetrics() {
+      if (metricsLoading) return;
+      metricsLoading = true;
       try {
         const { data: events, error } = await sb.from("creamy_events")
           .select("*")
@@ -1724,6 +1727,8 @@
         renderCampaignTable(events);
       } catch (e) {
         console.error("Erro ao ler eventos:", e);
+      } finally {
+        metricsLoading = false;
       }
     }
 
@@ -2135,9 +2140,27 @@
     const layoutSidebar = document.querySelector(".sidebar");
     const layoutMainContent = document.querySelector(".main-content");
     const layoutMobileNavbar = document.querySelector(".mobile-navbar");
+    let metricsSyncTimer = null;
+
+    function stopMetricsSync() {
+      if (metricsSyncTimer) window.clearInterval(metricsSyncTimer);
+      metricsSyncTimer = null;
+    }
+
+    function startMetricsSync() {
+      stopMetricsSync();
+      metricsSyncTimer = window.setInterval(() => {
+        if (!document.hidden) loadLocalMetrics();
+      }, 3000);
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && metricsSyncTimer) loadLocalMetrics();
+    });
 
     function checkAuth(session) {
       if (!session) {
+        stopMetricsSync();
         if (layoutSidebar) layoutSidebar.style.display = "none";
         if (layoutMainContent) layoutMainContent.style.display = "none";
         if (layoutMobileNavbar) layoutMobileNavbar.style.setProperty("display", "none", "important");
@@ -2156,6 +2179,7 @@
           setTimeout(() => { map.resize(); }, 200);
         }
         loadAllData();
+        startMetricsSync();
       }
     }
 
