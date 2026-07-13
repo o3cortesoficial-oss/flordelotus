@@ -37,22 +37,39 @@ export default async function handler(request, response) {
       }
     } else if (action === 'quantity') {
       state.quantity = Math.max(1, Math.min(99, Number.parseInt(body.quantity, 10) || 1));
+      state.pix = null;
     } else if (action === 'coupon') {
       if (String(body.code || '').toUpperCase() !== CATALOG.coupon.code) {
         return response.status(422).json({ error: 'Cupom inválido' });
       }
       state.couponCode = CATALOG.coupon.code;
+      state.pix = null;
     } else if (action === 'gift') {
       const giftId = String(body.giftId || '');
       if (giftId && !CATALOG.gifts.has(giftId)) return response.status(422).json({ error: 'Brinde inválido' });
       state.giftId = giftId || null;
+      state.pix = null;
     } else if (action === 'addon') {
       const addonId = String(body.addonId || '');
       if (!CATALOG.addons.has(addonId)) return response.status(422).json({ error: 'Produto adicional inválido' });
       if (!state.addonIds.includes(addonId)) state.addonIds.push(addonId);
+      state.pix = null;
     } else if (action === 'addon-remove') {
       const addonId = String(body.addonId || '');
       state.addonIds = state.addonIds.filter(id => id !== addonId);
+      state.pix = null;
+    } else if (action === 'profile') {
+      const profile = body.profile || {};
+      const email = String(profile.email || '').trim().toLowerCase();
+      const phone = String(profile.phone || '').replace(/\D/g, '');
+      const document = String(profile.document || '').replace(/\D/g, '');
+      const firstName = String(profile.firstName || '').trim();
+      const lastName = String(profile.lastName || '').trim();
+      if (!/^\S+@\S+\.\S+$/.test(email) || !firstName || !lastName || !/^\d{10,11}$/.test(phone) || !/^\d{11}$/.test(document)) {
+        return response.status(422).json({ error: 'Preencha corretamente os dados de identificação' });
+      }
+      state.profile = { email, phone, document, firstName: firstName.slice(0, 80), lastName: lastName.slice(0, 120) };
+      state.pix = null;
     } else if (action === 'shipping') {
       if (!body.shipping || !['delivery', 'pickup'].includes(body.shipping.method)) {
         return response.status(422).json({ error: 'Entrega inválida' });
@@ -64,6 +81,7 @@ export default async function handler(request, response) {
         store: body.shipping.store ? String(body.shipping.store).slice(0, 300) : null,
         rate: body.shipping.method === 'delivery' ? 'standard-free' : 'pickup',
       };
+      state.pix = null;
     } else if (action === 'address') {
       const address = body.address || {};
       const cep = String(address.cep || '').replace(/\D/g, '').slice(0, 8);
@@ -86,6 +104,7 @@ export default async function handler(request, response) {
           .map(value => String(value || '').trim()).filter(Boolean).join(', ').slice(0, 500),
         store: null,
       };
+      state.pix = null;
     } else {
       return response.status(400).json({ error: 'Ação inválida' });
     }

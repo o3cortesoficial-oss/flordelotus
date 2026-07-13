@@ -264,17 +264,62 @@
       summary.innerHTML = html;
     }
 
-    function setPixPayment(data) {
-      if (!data || !data.qrCode || !data.copyPaste) return;
+    var qrCodeLibraryPromise = null;
+    var pixRequestPromise = null;
+
+    function loadQrCodeLibrary() {
+      if (window.QRCode && window.QRCode.toDataURL) return Promise.resolve(window.QRCode);
+      if (qrCodeLibraryPromise) return qrCodeLibraryPromise;
+      qrCodeLibraryPromise = new Promise(function (resolve, reject) {
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js';
+        script.onload = function () { resolve(window.QRCode); };
+        script.onerror = function () { reject(new Error('Não foi possível renderizar o QR Code')); };
+        document.head.appendChild(script);
+      });
+      return qrCodeLibraryPromise;
+    }
+
+    async function setPixPayment(data) {
+      if (!data || !data.copyPaste) return;
       var qr = paymentStage.querySelector('.restored-pix-qrcode');
       var code = paymentStage.querySelector('.restored-pix-code');
       var copy = paymentStage.querySelector('.restored-pix-copy');
-      qr.innerHTML = '<img src="' + String(data.qrCode).replace(/"/g, '&quot;') + '" alt="QR Code Pix" style="display:block;width:100%;height:auto">';
       code.value = data.copyPaste;
       copy.disabled = false;
-      paymentStage.querySelector('.restored-pix-status').textContent = 'Pix gerado. Conclua o pagamento dentro do prazo informado.';
+      try {
+        var QRCode = await loadQrCodeLibrary();
+        var imageUrl = await QRCode.toDataURL(data.copyPaste, { width: 360, margin: 2, errorCorrectionLevel: 'M' });
+        qr.innerHTML = '<img src="' + imageUrl + '" alt="QR Code Pix da West Pay" style="display:block;width:100%;height:auto">';
+      } catch (_) {
+        qr.textContent = 'Use o código Pix copia e cola abaixo.';
+      }
+      var expiry = data.expiresAt ? new Date(data.expiresAt).toLocaleString('pt-BR') : '';
+      paymentStage.querySelector('.restored-pix-status').textContent = 'Pix gerado pela West Pay.' + (expiry ? ' Válido até ' + expiry + '.' : '');
     }
     window.creamySetPixPayment = setPixPayment;
+
+    function generatePixPayment() {
+      if (pixRequestPromise) return pixRequestPromise;
+      var qr = paymentStage.querySelector('.restored-pix-qrcode');
+      var status = paymentStage.querySelector('.restored-pix-status');
+      qr.textContent = 'Gerando cobrança Pix...';
+      status.textContent = 'Conectando com a West Pay com segurança.';
+      pixRequestPromise = fetch('/api/pix', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(async function (response) {
+          var data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Não foi possível gerar o Pix');
+          await setPixPayment(data);
+          return data;
+        })
+        .catch(function (error) {
+          qr.textContent = 'Pix indisponível';
+          status.textContent = error.message || 'Não foi possível gerar o Pix. Tente novamente.';
+          pixRequestPromise = null;
+          throw error;
+        });
+      return pixRequestPromise;
+    }
     paymentStage.querySelector('.restored-pix-copy').addEventListener('click', async function () {
       var code = paymentStage.querySelector('.restored-pix-code').value;
       if (!code) return;
@@ -337,6 +382,7 @@
       deliveryStage.style.display = 'none';
       paymentStage.style.display = 'block';
       renderPaymentSummary();
+      generatePixPayment().catch(function () {});
       var steps = document.querySelectorAll('.dot-progress-bar');
       if (steps[3]) steps[3].click();
       window.location.hash = '#/orderform/payment';
@@ -344,10 +390,27 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    identificationForm.addEventListener('submit', function (event) {
+    identificationForm.addEventListener('submit', async function (event) {
       event.preventDefault();
       if (!identificationForm.reportValidity()) return;
-      showDeliveryStage();
+      var submit = identificationForm.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      submit.textContent = 'Salvando identificação...';
+      try {
+        await cartRequest('profile', { profile: {
+          email: identificationForm.elements.email.value,
+          firstName: identificationForm.elements.firstName.value,
+          lastName: identificationForm.elements.lastName.value,
+          document: identificationForm.elements.document.value,
+          phone: identificationForm.elements.phone.value
+        } });
+        showDeliveryStage();
+      } catch (error) {
+        window.alert(error.message || 'Não foi possível salvar a identificação.');
+      } finally {
+        submit.disabled = false;
+        submit.textContent = 'Continuar';
+      }
     });
 
     addressForm.addEventListener('submit', async function (event) {

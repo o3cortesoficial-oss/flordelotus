@@ -53,6 +53,8 @@ export function readCart(request) {
     couponCode: raw.couponCode === CATALOG.coupon.code ? raw.couponCode : null,
     giftId: CATALOG.gifts.has(String(raw.giftId)) ? String(raw.giftId) : null,
     shipping: raw.shipping && typeof raw.shipping === 'object' ? raw.shipping : null,
+    profile: raw.profile && typeof raw.profile === 'object' ? raw.profile : null,
+    pix: raw.pix && typeof raw.pix === 'object' ? raw.pix : null,
     addonIds: Array.isArray(raw.addonIds) ? raw.addonIds.map(String).filter(id => CATALOG.addons.has(id)) : [],
     lastActivationToken: typeof raw.lastActivationToken === 'string' ? raw.lastActivationToken.slice(0, 100) : null,
     funnelStages: Array.isArray(raw.funnelStages) ? raw.funnelStages.map(String).filter(stage => ['product', 'cart', 'profile', 'shipping', 'payment'].includes(stage)) : [],
@@ -78,6 +80,13 @@ export function presentCart(state) {
     giftId: state.giftId,
     gift: state.giftId ? CATALOG.gifts.get(state.giftId) : null,
     shipping: state.shipping,
+    profile: state.profile ? {
+      email: state.profile.email,
+      firstName: state.profile.firstName,
+      lastName: state.profile.lastName,
+      phone: state.profile.phone,
+      document: state.profile.document,
+    } : null,
     addons,
     product: CATALOG.product,
     totals: {

@@ -1924,6 +1924,7 @@
           if (gateway.client_id) document.getElementById("gateway-client-id").value = gateway.client_id;
           if (gateway.client_secret) document.getElementById("gateway-client-secret").value = gateway.client_secret;
           updateGatewayStatusBadge(gateway.client_id, gateway.client_secret);
+          verifyGatewayConnection();
         }
 
         // 5.3 Carregar Cloaker
@@ -1952,11 +1953,33 @@
       if (badge) {
         if (apiKey && apiKey.trim().length > 0 && publicKey && publicKey.trim().length > 0) {
           badge.className = "badge badge-green";
-          badge.innerText = "Conectado";
+          badge.innerText = "Verificando";
         } else {
           badge.className = "badge badge-grey";
           badge.innerText = "Pendente";
         }
+      }
+    }
+
+    async function verifyGatewayConnection() {
+      const badge = document.getElementById("gateway-status-badge");
+      if (!badge) return;
+      try {
+        const response = await fetch("/api/gateway-status", { cache: "no-store" });
+        const result = await response.json();
+        if (result.status === "connected") {
+          badge.className = "badge badge-green";
+          badge.innerText = "Conectado";
+        } else if (result.status === "invalid") {
+          badge.className = "badge badge-red";
+          badge.innerText = "Credenciais inválidas";
+        } else {
+          badge.className = "badge badge-grey";
+          badge.innerText = result.status === "missing" ? "Pendente" : "Indisponível";
+        }
+      } catch (_) {
+        badge.className = "badge badge-grey";
+        badge.innerText = "Indisponível";
       }
     }
 
@@ -1992,6 +2015,7 @@
         
         if (error) throw error;
         updateGatewayStatusBadge(client_id, client_secret);
+        await verifyGatewayConnection();
         showToast("Credenciais da West Pay salvas com sucesso!", 'success');
       } catch(e) {
         showToast("Erro ao salvar gateway: " + e.message, 'error');
