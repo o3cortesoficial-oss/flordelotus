@@ -1669,11 +1669,13 @@
         let visitsCount = 0;
         let purchaseCount = 0;
         let shippingsCount = 0;
+        let checkoutsCount = 0;
         let totalRevenue = 0;
 
         events.forEach(ev => {
           if (ev.type === "visit") visitsCount++;
           if (ev.type === "shipping") shippingsCount++;
+          if (ev.type === "checkout") checkoutsCount++;
           if (ev.type === "purchase") {
             purchaseCount++;
             totalRevenue += parseFloat(ev.value) || 0;
@@ -1687,6 +1689,7 @@
           if (ev.type === "visit") { badgeClass = "badge-blue"; badgeText = "Visita"; }
           else if (ev.type === "purchase") { badgeClass = "badge-green"; badgeText = "Compra"; }
           else if (ev.type === "shipping") { badgeClass = "badge-grey"; badgeText = "Frete"; }
+          else if (ev.type === "checkout") { badgeClass = "badge-red"; badgeText = "Checkout"; }
           else if (ev.type === "newsletter") { badgeClass = "badge-red"; badgeText = "Newsletter"; }
 
           const valStr = ev.value > 0 ? "R$ " + parseFloat(ev.value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-";
@@ -1716,7 +1719,7 @@
         });
 
         eventsBody.innerHTML = html;
-        updateKPIs(visitsCount, purchaseCount, totalRevenue, shippingsCount);
+        updateKPIs(visitsCount, purchaseCount, totalRevenue, shippingsCount, checkoutsCount);
         renderMapMarkers(events);
         renderCampaignTable(events);
       } catch (e) {
@@ -1724,7 +1727,7 @@
       }
     }
 
-    function updateFunnel(visits, shippings, purchases) {
+    function updateFunnel(visits, shippings, checkouts) {
       const visitsVal = document.getElementById("funnel-visits-value");
       const shippingVal = document.getElementById("funnel-shipping-value");
       const purchasesVal = document.getElementById("funnel-purchases-value");
@@ -1738,7 +1741,7 @@
       
       if (visitsVal) visitsVal.innerText = visits;
       if (shippingVal) shippingVal.innerText = shippings;
-      if (purchasesVal) purchasesVal.innerText = purchases;
+      if (purchasesVal) purchasesVal.innerText = checkouts;
       
       if (visitsBar) visitsBar.style.width = visits > 0 ? "100%" : "0%";
       
@@ -1746,12 +1749,12 @@
       if (shippingPct) shippingPct.innerText = shipRate.toFixed(0) + "%";
       if (shippingBar) shippingBar.style.width = Math.min(100, shipRate) + "%";
       
-      const purchaseRate = visits > 0 ? (purchases / visits) * 100 : 0;
+      const purchaseRate = visits > 0 ? (checkouts / visits) * 100 : 0;
       if (purchasesPct) purchasesPct.innerText = purchaseRate.toFixed(0) + "%";
       if (purchasesBar) purchasesBar.style.width = Math.min(100, purchaseRate) + "%";
     }
 
-    function updateKPIs(visits, purchases, revenue, shippings = null) {
+    function updateKPIs(visits, purchases, revenue, shippings = null, checkouts = null) {
       kpiVisits.innerText = visits;
       kpiPurchases.innerText = purchases;
       kpiRevenue.innerText = "R$ " + revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1770,7 +1773,11 @@
         const shpEl = document.getElementById("funnel-shipping-value");
         shippings = parseInt(shpEl ? shpEl.innerText : 0) || 0;
       }
-      updateFunnel(visits, shippings, purchases);
+      if (checkouts === null) {
+        const checkoutEl = document.getElementById("funnel-purchases-value");
+        checkouts = parseInt(checkoutEl ? checkoutEl.innerText : 0) || 0;
+      }
+      updateFunnel(visits, shippings, checkouts);
     }
 
     btnClearEvents.forEach(btn => {
@@ -2068,20 +2075,23 @@
           const curRevenue   = parseFloat(curRevStr) || 0;
           const shpEl        = document.getElementById("funnel-shipping-value");
           const curShippings = parseInt(shpEl ? shpEl.innerText : 0) || 0;
+          const checkoutEl   = document.getElementById("funnel-purchases-value");
+          const curCheckouts = parseInt(checkoutEl ? checkoutEl.innerText : 0) || 0;
 
           updateKPIs(
             curVisits    + (ev.type === 'visit' ? 1 : 0),
             curPurchases + (ev.type === 'purchase' ? 1 : 0),
             curRevenue   + (ev.type === 'purchase' ? (parseFloat(ev.value)||0) : 0),
-            curShippings + (ev.type === 'shipping' ? 1 : 0)
+            curShippings + (ev.type === 'shipping' ? 1 : 0),
+            curCheckouts + (ev.type === 'checkout' ? 1 : 0)
           );
 
           // Prepend nova linha na tabela de eventos sem reload
           if (eventsBody) {
             const date    = new Date(ev.timestamp);
             const timeStr = date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-            const badges  = { visit:'badge-blue', purchase:'badge-green', shipping:'badge-grey', newsletter:'badge-red' };
-            const labels  = { visit:'Visita', purchase:'Compra', shipping:'Frete', newsletter:'Newsletter' };
+            const badges  = { visit:'badge-blue', purchase:'badge-green', shipping:'badge-grey', checkout:'badge-red', newsletter:'badge-red' };
+            const labels  = { visit:'Visita', purchase:'Compra', shipping:'Frete', checkout:'Checkout', newsletter:'Newsletter' };
             const valStr  = ev.value > 0 ? 'R$ ' + parseFloat(ev.value).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '-';
             const newRow  = document.createElement('tr');
             newRow.style.animation = 'fadeIn 0.4s ease';

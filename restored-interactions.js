@@ -38,7 +38,13 @@
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'quantity', quantity: quantity() })
+        body: JSON.stringify({
+          action: 'activate',
+          quantity: quantity(),
+          activationToken: window.crypto && window.crypto.randomUUID
+            ? window.crypto.randomUUID()
+            : Date.now().toString(36) + Math.random().toString(36).slice(2)
+        })
       });
       if (!cartResponse.ok) return;
       window.location.href = 'Creamy%20-%20Finalizar%20compra.html#/orderform';

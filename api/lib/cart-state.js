@@ -42,6 +42,7 @@ export function readCart(request) {
     couponCode: raw.couponCode === CATALOG.coupon.code ? raw.couponCode : null,
     giftId: CATALOG.gifts.has(String(raw.giftId)) ? String(raw.giftId) : null,
     shipping: raw.shipping && typeof raw.shipping === 'object' ? raw.shipping : null,
+    lastActivationToken: typeof raw.lastActivationToken === 'string' ? raw.lastActivationToken.slice(0, 100) : null,
   };
 }
 
