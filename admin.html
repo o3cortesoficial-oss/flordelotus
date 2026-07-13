@@ -712,6 +712,31 @@
       50%  { box-shadow: 0 0 0 14px rgba(0,186,231,0); }
       100% { box-shadow: 0 0 0 0 rgba(0,186,231,0); }
     }
+
+    /* GRID DO MAPA E FUNNEL */
+    .map-and-funnel-grid {
+      display: grid;
+      grid-template-columns: 2.2fr 1.2fr;
+      gap: 30px;
+      margin-top: 30px;
+      align-items: stretch;
+    }
+    .funnel-step {
+      cursor: pointer;
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .funnel-step:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(5, 77, 153, 0.08) !important;
+      border-color: rgba(5, 77, 153, 0.2) !important;
+    }
+    @media (max-width: 992px) {
+      .map-and-funnel-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -875,36 +900,125 @@
         </div>
       </div>
 
-      <!-- MAPA DE CALOR FULL WIDTH (No lugar do gráfico e do ROI) -->
-      <div class="panel" style="position: relative;">
-        <div class="panel-header">
-          <h2 class="panel-title">Mapa de Distribuição de Tráfego & Vendas (Real-Time)</h2>
-          <span class="panel-subtitle">Geolocalização dos visitantes baseada em acessos, fretes e conversões.</span>
-        </div>
+      <!-- SEÇÃO MAPA E FUNNEL LADO A LADO -->
+      <div class="map-and-funnel-grid">
         
-        <div style="position: relative; width: 100%; height: 480px; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
-          <!-- Container do Mapa -->
-          <div id="map" style="width: 100%; height: 100%;"></div>
+        <!-- MAPA DE CALOR -->
+        <div class="panel" style="position: relative; margin: 0; display: flex; flex-direction: column;">
+          <div class="panel-header">
+            <h2 class="panel-title">Mapa de Distribuição de Tráfego & Vendas (Real-Time)</h2>
+            <span class="panel-subtitle">Geolocalização dos visitantes baseada em acessos, fretes e conversões.</span>
+          </div>
           
-          <!-- Painel Flutuante do Mapa -->
-          <div class="map-sidebar-info">
-            <div class="map-sidebar-title">Legenda de Eventos</div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--brand-teal); border-radius: 50%;"></span>
-                <span>Visitas de Anúncios</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--brand-coral); border-radius: 50%;"></span>
-                <span>Vendas Confirmadas</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="display: inline-block; width: 8px; height: 8px; background-color: #787878; border-radius: 50%;"></span>
-                <span>Buscas de Frete (CEP)</span>
+          <div style="position: relative; flex: 1; min-height: 440px; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+            <!-- Container do Mapa -->
+            <div id="map" style="width: 100%; height: 100%;"></div>
+            
+            <!-- Painel Flutuante do Mapa -->
+            <div class="map-sidebar-info">
+              <div class="map-sidebar-title">Legenda de Eventos</div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--brand-teal); border-radius: 50%;"></span>
+                  <span>Visitas de Anúncios</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="display: inline-block; width: 8px; height: 8px; background-color: var(--brand-coral); border-radius: 50%;"></span>
+                  <span>Vendas Confirmadas</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="display: inline-block; width: 8px; height: 8px; background-color: #787878; border-radius: 50%;"></span>
+                  <span>Buscas de Frete (CEP)</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- FLUXO DE ATIVAÇÃO DO CHECKOUT -->
+        <div class="panel" style="margin: 0; display: flex; flex-direction: column; justify-content: space-between;">
+          <div class="panel-header">
+            <h2 class="panel-title">Fluxo de Ativação do Checkout</h2>
+            <span class="panel-subtitle">Funil de conversão em tempo real.</span>
+          </div>
+          
+          <div class="funnel-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; padding: 10px 0;">
+            
+            <!-- Passo 1 -->
+            <div class="funnel-step" style="position: relative; display: flex; flex-direction: column; gap: 8px; padding: 15px; border-radius: 12px; background: linear-gradient(135deg, rgba(0, 186, 231, 0.04) 0%, rgba(255, 255, 255, 1) 100%); border: 1px solid rgba(0, 186, 231, 0.1); transition: all 0.3s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 36px; height: 36px; border-radius: 8px; background-color: var(--brand-teal-light); display: flex; align-items: center; justify-content: center; color: var(--brand-teal);">
+                    <i class="iconsax" icon-name="eye" style="font-size: 18px; font-weight: bold;"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight: 700; font-family: var(--font-title); font-size: 13px; color: var(--brand-navy);">Acessos Únicos</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Usuários na Oferta</div>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: var(--brand-navy);" id="funnel-visits-value">0</div>
+                  <span class="badge badge-blue" style="font-size: 9px; padding: 2px 6px;">100%</span>
+                </div>
+              </div>
+              <div style="width: 100%; height: 5px; background-color: #e8e8e8; border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                <div id="funnel-visits-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--brand-teal) 0%, #3cd6ff 100%); border-radius: 3px; transition: width 0.8s ease;"></div>
+              </div>
+              
+              <!-- Linha de conexão -->
+              <div style="position: absolute; bottom: -18px; left: 32px; width: 2px; height: 14px; background-color: var(--border-color); z-index: 1;"></div>
+            </div>
+
+            <!-- Passo 2 -->
+            <div class="funnel-step" style="position: relative; display: flex; flex-direction: column; gap: 8px; padding: 15px; border-radius: 12px; background: linear-gradient(135deg, rgba(5, 77, 153, 0.02) 0%, rgba(255, 255, 255, 1) 100%); border: 1px solid var(--border-color); transition: all 0.3s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 36px; height: 36px; border-radius: 8px; background-color: #eaeaea; display: flex; align-items: center; justify-content: center; color: #555;">
+                    <i class="iconsax" icon-name="truck-fast" style="font-size: 18px; font-weight: bold;"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight: 700; font-family: var(--font-title); font-size: 13px; color: var(--brand-navy);">Simulações de Frete</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Intenção (CEP)</div>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: var(--brand-navy);" id="funnel-shipping-value">0</div>
+                  <span class="badge badge-grey" style="font-size: 9px; padding: 2px 6px; font-weight: 700;" id="funnel-shipping-pct">0%</span>
+                </div>
+              </div>
+              <div style="width: 100%; height: 5px; background-color: #e8e8e8; border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                <div id="funnel-shipping-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #555 0%, #888 100%); border-radius: 3px; transition: width 0.8s ease;"></div>
+              </div>
+              
+              <!-- Linha de conexão -->
+              <div style="position: absolute; bottom: -18px; left: 32px; width: 2px; height: 14px; background-color: var(--border-color); z-index: 1;"></div>
+            </div>
+
+            <!-- Passo 3 -->
+            <div class="funnel-step" style="display: flex; flex-direction: column; gap: 8px; padding: 15px; border-radius: 12px; background: linear-gradient(135deg, rgba(229, 139, 121, 0.04) 0%, rgba(255, 255, 255, 1) 100%); border: 1px solid rgba(229, 139, 121, 0.1); transition: all 0.3s ease;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 36px; height: 36px; border-radius: 8px; background-color: #fff1f0; display: flex; align-items: center; justify-content: center; color: var(--brand-coral);">
+                    <i class="iconsax" icon-name="shopping-bag" style="font-size: 18px; font-weight: bold;"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight: 700; font-family: var(--font-title); font-size: 13px; color: var(--brand-navy);">Checkouts Ativados</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Cliques em Comprar</div>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 16px; font-weight: 800; font-family: var(--font-title); color: var(--brand-navy);" id="funnel-purchases-value">0</div>
+                  <span class="badge badge-red" style="font-size: 9px; padding: 2px 6px; font-weight: 700; background-color: var(--brand-coral); border-color: var(--brand-coral);" id="funnel-purchases-pct">0%</span>
+                </div>
+              </div>
+              <div style="width: 100%; height: 5px; background-color: #e8e8e8; border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                <div id="funnel-purchases-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--brand-coral) 0%, #ffaba1 100%); border-radius: 3px; transition: width 0.8s ease;"></div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+        
       </div>
 
       <!-- CARD DE RASTREAMENTO POR CAMPANHA -->
@@ -1554,10 +1668,12 @@
         let html = "";
         let visitsCount = 0;
         let purchaseCount = 0;
+        let shippingsCount = 0;
         let totalRevenue = 0;
 
         events.forEach(ev => {
           if (ev.type === "visit") visitsCount++;
+          if (ev.type === "shipping") shippingsCount++;
           if (ev.type === "purchase") {
             purchaseCount++;
             totalRevenue += parseFloat(ev.value) || 0;
@@ -1600,7 +1716,7 @@
         });
 
         eventsBody.innerHTML = html;
-        updateKPIs(visitsCount, purchaseCount, totalRevenue);
+        updateKPIs(visitsCount, purchaseCount, totalRevenue, shippingsCount);
         renderMapMarkers(events);
         renderCampaignTable(events);
       } catch (e) {
@@ -1608,7 +1724,34 @@
       }
     }
 
-    function updateKPIs(visits, purchases, revenue) {
+    function updateFunnel(visits, shippings, purchases) {
+      const visitsVal = document.getElementById("funnel-visits-value");
+      const shippingVal = document.getElementById("funnel-shipping-value");
+      const purchasesVal = document.getElementById("funnel-purchases-value");
+      
+      const visitsBar = document.getElementById("funnel-visits-bar");
+      const shippingBar = document.getElementById("funnel-shipping-bar");
+      const purchasesBar = document.getElementById("funnel-purchases-bar");
+      
+      const shippingPct = document.getElementById("funnel-shipping-pct");
+      const purchasesPct = document.getElementById("funnel-purchases-pct");
+      
+      if (visitsVal) visitsVal.innerText = visits;
+      if (shippingVal) shippingVal.innerText = shippings;
+      if (purchasesVal) purchasesVal.innerText = purchases;
+      
+      if (visitsBar) visitsBar.style.width = visits > 0 ? "100%" : "0%";
+      
+      const shipRate = visits > 0 ? (shippings / visits) * 100 : 0;
+      if (shippingPct) shippingPct.innerText = shipRate.toFixed(0) + "%";
+      if (shippingBar) shippingBar.style.width = Math.min(100, shipRate) + "%";
+      
+      const purchaseRate = visits > 0 ? (purchases / visits) * 100 : 0;
+      if (purchasesPct) purchasesPct.innerText = purchaseRate.toFixed(0) + "%";
+      if (purchasesBar) purchasesBar.style.width = Math.min(100, purchaseRate) + "%";
+    }
+
+    function updateKPIs(visits, purchases, revenue, shippings = null) {
       kpiVisits.innerText = visits;
       kpiPurchases.innerText = purchases;
       kpiRevenue.innerText = "R$ " + revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1622,6 +1765,12 @@
 
       kpiRoas.innerText = roas.toFixed(1) + "x";
       kpiCpa.innerText = purchases > 0 ? "R$ " + cpa.toFixed(2) : "R$ 0,00";
+
+      if (shippings === null) {
+        const shpEl = document.getElementById("funnel-shipping-value");
+        shippings = parseInt(shpEl ? shpEl.innerText : 0) || 0;
+      }
+      updateFunnel(visits, shippings, purchases);
     }
 
     btnClearEvents.forEach(btn => {
@@ -1973,7 +2122,7 @@
     }
 
     // Contadores incrementais para KPI (sem refetch)
-    let _rtVisits = 0, _rtPurchases = 0, _rtRevenue = 0;
+    let _rtVisits = 0, _rtPurchases = 0, _rtRevenue = 0, _rtShippings = 0;
 
     function initRealtime() {
       sb.channel('realtime_events')
@@ -1986,6 +2135,7 @@
 
           // Atualiza KPIs incrementalmente
           if (ev.type === 'visit')    _rtVisits++;
+          if (ev.type === 'shipping') _rtShippings++;
           if (ev.type === 'purchase') { _rtPurchases++; _rtRevenue += parseFloat(ev.value) || 0; }
 
           // Recalcula e exibe KPIs baseado nos totais atuais
@@ -1993,11 +2143,14 @@
           const curPurchases = parseInt(kpiPurchases.innerText) || 0;
           const curRevStr    = kpiRevenue.innerText.replace(/[^0-9,]/g,'').replace(',','.');
           const curRevenue   = parseFloat(curRevStr) || 0;
+          const shpEl        = document.getElementById("funnel-shipping-value");
+          const curShippings = parseInt(shpEl ? shpEl.innerText : 0) || 0;
 
           updateKPIs(
             curVisits    + (ev.type === 'visit' ? 1 : 0),
             curPurchases + (ev.type === 'purchase' ? 1 : 0),
-            curRevenue   + (ev.type === 'purchase' ? (parseFloat(ev.value)||0) : 0)
+            curRevenue   + (ev.type === 'purchase' ? (parseFloat(ev.value)||0) : 0),
+            curShippings + (ev.type === 'shipping' ? 1 : 0)
           );
 
           // Prepend nova linha na tabela de eventos sem reload
