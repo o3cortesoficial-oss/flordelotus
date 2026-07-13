@@ -229,12 +229,35 @@
       if (!cart) return;
       var summary = paymentStage.querySelector('.restored-payment-summary');
       function cents(value) { return 'R$ ' + (value / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-      var rows = [{ name: cart.product.name, detail: cart.quantity + ' unidade(s)', value: cart.product.sellingPrice * cart.quantity }];
-      (cart.addons || []).forEach(function (addon) { rows.push({ name: addon.name, detail: '1 unidade', value: addon.sellingPrice }); });
-      if (cart.gift) rows.push({ name: cart.gift.name, detail: 'Brinde selecionado', value: 0 });
+      function imageFrom(selector) {
+        var image = document.querySelector(selector);
+        return image ? image.getAttribute('src') : '';
+      }
+      var rows = [{
+        name: cart.product.name,
+        detail: cart.quantity + ' unidade(s)',
+        value: cart.product.sellingPrice * cart.quantity,
+        image: imageFrom('.cart-items tbody .product-item:not(.restored-addon-cart-item):not(.restored-gift-cart-item) .product-image img')
+      }];
+      (cart.addons || []).forEach(function (addon) {
+        rows.push({
+          name: addon.name,
+          detail: '1 unidade',
+          value: addon.sellingPrice,
+          image: imageFrom('.beon-showcase__item[data-product-sku="' + addon.id + '"] .beon-showcase__item-image img')
+        });
+      });
+      if (cart.gift) rows.push({
+        name: cart.gift.name,
+        detail: 'Brinde selecionado',
+        value: 0,
+        image: imageFrom('.available-gift-item[data-item-id="' + cart.gift.id + '"] .product-image img')
+      });
       var html = '<h3 style="margin:0 0 14px;color:#194a97;font-size:19px">Resumo do pedido</h3>';
       rows.forEach(function (row) {
-        html += '<div style="display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid #edf1f5;text-align:left"><span><strong style="display:block;color:#424242">' + row.name + '</strong><small style="color:#676767">' + row.detail + '</small></span><strong style="white-space:nowrap;color:' + (row.value ? '#202020' : '#194a97') + '">' + (row.value ? cents(row.value) : 'Grátis') + '</strong></div>';
+        html += '<div style="display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #edf1f5;text-align:left">' +
+          '<div style="width:64px;height:64px;border-radius:10px;background:#f4f4f4;display:flex;align-items:center;justify-content:center;overflow:hidden">' + (row.image ? '<img src="' + row.image.replace(/"/g, '&quot;') + '" alt="' + row.name.replace(/"/g, '&quot;') + '" style="display:block;max-width:100%;max-height:100%;object-fit:contain">' : '') + '</div>' +
+          '<span><strong style="display:block;color:#424242;line-height:1.3">' + row.name + '</strong><small style="color:#676767">' + row.detail + '</small></span><strong style="white-space:nowrap;color:' + (row.value ? '#202020' : '#194a97') + '">' + (row.value ? cents(row.value) : 'Grátis') + '</strong></div>';
       });
       if (cart.totals.discount > 0) html += '<div style="display:flex;justify-content:space-between;padding-top:12px;color:#24704a"><span>Descontos</span><strong>- ' + cents(cart.totals.discount) + '</strong></div>';
       html += '<div style="display:flex;justify-content:space-between;align-items:end;padding-top:16px;font-size:18px"><strong>Total</strong><strong style="color:#194a97">' + cents(cart.totals.total) + ' no PIX</strong></div>';
