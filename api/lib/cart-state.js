@@ -11,7 +11,12 @@ export const CATALOG = Object.freeze({
     code: 'MEUKIT50OFF',
     percentOff: 50,
   },
-  gifts: new Set(['37', '38', '39', '40']),
+  gifts: new Map([
+    ['37', { id: '37', name: 'Sérum Hidratante com Ácido Hialurônico' }],
+    ['213', { id: '213', name: 'Gel de Limpeza' }],
+    ['49', { id: '49', name: 'Protetor Solar Watery Lotion FPS 60' }],
+    ['216', { id: '216', name: 'Loção Hidratante Fortalecedora - Ceramide Body Cream 200ml' }],
+  ]),
   addons: new Map([
     ['134', { id: '134', name: 'Creme Hidratante Labial - Lip Balm Latte', listPrice: 3683, sellingPrice: 3499 }],
     ['135', { id: '135', name: 'Creme Hidratante Labial - Lip Balm Chai', listPrice: 3683, sellingPrice: 3499 }],
@@ -70,6 +75,7 @@ export function presentCart(state) {
     quantity: state.quantity,
     coupon: state.couponCode ? { code: state.couponCode, percentOff: CATALOG.coupon.percentOff } : null,
     giftId: state.giftId,
+    gift: state.giftId ? CATALOG.gifts.get(state.giftId) : null,
     shipping: state.shipping,
     addons,
     product: CATALOG.product,

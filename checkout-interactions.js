@@ -215,8 +215,49 @@
     var paymentStage = document.createElement('section');
     paymentStage.className = 'restored-payment-stage';
     paymentStage.style.cssText = 'display:none;background:#fff;border-radius:16px;padding:24px;box-sizing:border-box;width:100%;max-width:720px;margin:0 auto';
-    paymentStage.innerHTML = '<h2 style="margin:0 0 8px;color:#194a97;font-size:24px">Pagamento</h2><p style="margin:0 0 22px;color:#676767">Revise o pedido para realizar o pagamento via Pix.</p><div style="border:1px solid #d9e5f3;border-radius:12px;padding:18px;color:#194a97;font-weight:700">Pix</div>';
+    paymentStage.innerHTML = '<h2 style="margin:0 0 8px;color:#194a97;font-size:24px">Pagamento</h2><p style="margin:0 0 22px;color:#676767">Revise o pedido e pague com Pix.</p>' +
+      '<div class="restored-payment-summary" style="border:1px solid #d9e5f3;border-radius:14px;padding:18px;margin-bottom:18px"></div>' +
+      '<div class="restored-pix-area" style="border:1px solid #d9e5f3;border-radius:14px;padding:20px;text-align:center">' +
+      '<h3 style="margin:0 0 8px;color:#194a97;font-size:19px">Pague com Pix</h3><p style="margin:0 0 18px;color:#676767">Escaneie o QR Code ou use o código copia e cola.</p>' +
+      '<div class="restored-pix-qrcode" aria-live="polite" style="width:220px;min-height:220px;margin:0 auto 18px;border:1px dashed #b9cbe2;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;color:#676767">Aguardando geração do Pix</div>' +
+      '<label style="display:block;text-align:left;font-weight:600;color:#424242">Pix copia e cola<div style="display:flex;gap:8px;margin-top:8px"><input class="restored-pix-code" readonly aria-label="Código Pix copia e cola" placeholder="O código aparecerá aqui após a geração" style="min-width:0;flex:1;height:46px;border:1px solid #cbcbcb;border-radius:100px;padding:0 16px;box-sizing:border-box;background:#fff"><button type="button" class="restored-pix-copy" disabled style="height:46px;border:0;border-radius:100px;padding:0 20px;background:#194a97;color:#fff;font-weight:700">Copiar</button></div></label>' +
+      '<div class="restored-pix-status" aria-live="polite" style="margin-top:12px;color:#676767;font-size:13px">O Pix será disponibilizado quando a integração de pagamento gerar a cobrança.</div></div>';
     holder.appendChild(paymentStage);
+
+    function renderPaymentSummary() {
+      var cart = serverCart;
+      if (!cart) return;
+      var summary = paymentStage.querySelector('.restored-payment-summary');
+      function cents(value) { return 'R$ ' + (value / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      var rows = [{ name: cart.product.name, detail: cart.quantity + ' unidade(s)', value: cart.product.sellingPrice * cart.quantity }];
+      (cart.addons || []).forEach(function (addon) { rows.push({ name: addon.name, detail: '1 unidade', value: addon.sellingPrice }); });
+      if (cart.gift) rows.push({ name: cart.gift.name, detail: 'Brinde selecionado', value: 0 });
+      var html = '<h3 style="margin:0 0 14px;color:#194a97;font-size:19px">Resumo do pedido</h3>';
+      rows.forEach(function (row) {
+        html += '<div style="display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid #edf1f5;text-align:left"><span><strong style="display:block;color:#424242">' + row.name + '</strong><small style="color:#676767">' + row.detail + '</small></span><strong style="white-space:nowrap;color:' + (row.value ? '#202020' : '#194a97') + '">' + (row.value ? cents(row.value) : 'Grátis') + '</strong></div>';
+      });
+      if (cart.totals.discount > 0) html += '<div style="display:flex;justify-content:space-between;padding-top:12px;color:#24704a"><span>Descontos</span><strong>- ' + cents(cart.totals.discount) + '</strong></div>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:end;padding-top:16px;font-size:18px"><strong>Total</strong><strong style="color:#194a97">' + cents(cart.totals.total) + ' no PIX</strong></div>';
+      summary.innerHTML = html;
+    }
+
+    function setPixPayment(data) {
+      if (!data || !data.qrCode || !data.copyPaste) return;
+      var qr = paymentStage.querySelector('.restored-pix-qrcode');
+      var code = paymentStage.querySelector('.restored-pix-code');
+      var copy = paymentStage.querySelector('.restored-pix-copy');
+      qr.innerHTML = '<img src="' + String(data.qrCode).replace(/"/g, '&quot;') + '" alt="QR Code Pix" style="display:block;width:100%;height:auto">';
+      code.value = data.copyPaste;
+      copy.disabled = false;
+      paymentStage.querySelector('.restored-pix-status').textContent = 'Pix gerado. Conclua o pagamento dentro do prazo informado.';
+    }
+    window.creamySetPixPayment = setPixPayment;
+    paymentStage.querySelector('.restored-pix-copy').addEventListener('click', async function () {
+      var code = paymentStage.querySelector('.restored-pix-code').value;
+      if (!code) return;
+      await navigator.clipboard.writeText(code);
+      this.textContent = 'Copiado';
+    });
 
     var addressForm = deliveryStage.querySelector('.restored-address-form');
     var addressStatus = deliveryStage.querySelector('.restored-address-status');
@@ -271,6 +312,7 @@
       identification.style.display = 'none';
       deliveryStage.style.display = 'none';
       paymentStage.style.display = 'block';
+      renderPaymentSummary();
       var steps = document.querySelectorAll('.dot-progress-bar');
       if (steps[3]) steps[3].click();
       window.location.hash = '#/orderform/payment';
