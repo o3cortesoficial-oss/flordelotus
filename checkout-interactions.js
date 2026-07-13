@@ -198,25 +198,110 @@
     var deliveryStage = document.createElement('section');
     deliveryStage.className = 'restored-delivery-stage';
     deliveryStage.style.cssText = 'display:none;background:#fff;border-radius:16px;padding:24px;box-sizing:border-box;width:100%;max-width:720px;margin:0 auto';
-    deliveryStage.innerHTML = '<h2 style="margin:0 0 8px;color:#194a97;font-size:24px">Entrega</h2><p style="margin:0 0 22px;color:#676767">Escolha como deseja receber seu pedido.</p><div class="restored-delivery-content"></div>';
+    deliveryStage.innerHTML = '<h2 style="margin:0 0 8px;color:#194a97;font-size:24px">Entrega</h2><p style="margin:0 0 22px;color:#676767">Informe o endereço completo para receber seu pedido.</p>' +
+      '<form class="restored-address-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px">' +
+      '<label style="grid-column:1/-1">Nome do destinatário<input required autocomplete="name" name="recipient"></label>' +
+      '<label>CEP<div style="display:flex;gap:8px;margin-top:6px"><input required inputmode="numeric" pattern="[0-9]{5}-?[0-9]{3}" maxlength="9" autocomplete="postal-code" name="cep" style="margin-top:0"><button type="button" class="restored-address-cep" style="border:0;border-radius:100px;padding:0 18px;background:#194a97;color:#fff;font-weight:700">Buscar</button></div></label>' +
+      '<label>Rua<input required autocomplete="address-line1" name="street"></label>' +
+      '<label>Número<input required autocomplete="address-line2" name="number"></label>' +
+      '<label>Complemento<input autocomplete="address-line2" name="complement"></label>' +
+      '<label>Bairro<input required name="neighborhood"></label>' +
+      '<label>Cidade<input required autocomplete="address-level2" name="city"></label>' +
+      '<label>Estado<input required pattern="[A-Za-z]{2}" maxlength="2" autocomplete="address-level1" name="state"></label>' +
+      '<div class="restored-address-status" aria-live="polite" style="grid-column:1/-1;color:#194a97;font-weight:600"></div>' +
+      '<button type="submit" style="grid-column:1/-1;height:52px;border:0;border-radius:100px;background:#3e7dbf;color:#fff;font-size:16px;font-weight:700;cursor:pointer">Continuar para pagamento</button></form>';
     holder.appendChild(deliveryStage);
 
-    identificationForm.addEventListener('submit', function (event) {
-      event.preventDefault();
-      if (!identificationForm.reportValidity()) return;
-      identification.style.display = 'none';
-      deliveryStage.style.display = 'block';
-      var shipping = document.querySelector('#shipping-preview-container');
-      var deliveryContent = deliveryStage.querySelector('.restored-delivery-content');
-      if (shipping && deliveryContent && !deliveryContent.contains(shipping)) {
-        shipping.classList.remove('sf-hidden');
-        shipping.style.display = 'block';
-        deliveryContent.appendChild(shipping);
+    var paymentStage = document.createElement('section');
+    paymentStage.className = 'restored-payment-stage';
+    paymentStage.style.cssText = 'display:none;background:#fff;border-radius:16px;padding:24px;box-sizing:border-box;width:100%;max-width:720px;margin:0 auto';
+    paymentStage.innerHTML = '<h2 style="margin:0 0 8px;color:#194a97;font-size:24px">Pagamento</h2><p style="margin:0 0 22px;color:#676767">Revise o pedido para realizar o pagamento via Pix.</p><div style="border:1px solid #d9e5f3;border-radius:12px;padding:18px;color:#194a97;font-weight:700">Pix</div>';
+    holder.appendChild(paymentStage);
+
+    var addressForm = deliveryStage.querySelector('.restored-address-form');
+    var addressStatus = deliveryStage.querySelector('.restored-address-status');
+    var addressInputs = addressForm.querySelectorAll('input');
+    for (var addressInputIndex = 0; addressInputIndex < addressInputs.length; addressInputIndex++) {
+      addressInputs[addressInputIndex].style.cssText = 'display:block;width:100%;height:46px;margin-top:6px;border:1px solid #cbcbcb;border-radius:100px;padding:0 16px;box-sizing:border-box';
+    }
+    addressForm.elements.cep.style.marginTop = '0';
+    var savedAddress = serverCart && serverCart.shipping ? serverCart.shipping : {};
+    ['recipient', 'cep', 'street', 'number', 'complement', 'neighborhood', 'city', 'state'].forEach(function (field) {
+      if (addressForm.elements[field] && savedAddress[field]) addressForm.elements[field].value = savedAddress[field];
+    });
+
+    async function lookupAddress() {
+      var cep = addressForm.elements.cep.value.replace(/\D/g, '');
+      if (cep.length !== 8) {
+        addressStatus.textContent = 'Digite um CEP com 8 números.';
+        return;
       }
+      addressStatus.textContent = 'Buscando endereço...';
+      try {
+        var response = await fetch('/api/cep?cep=' + encodeURIComponent(cep));
+        var result = await response.json();
+        if (!response.ok || result.erro) throw new Error('CEP inválido');
+        addressForm.elements.street.value = result.logradouro || '';
+        addressForm.elements.neighborhood.value = result.bairro || '';
+        addressForm.elements.city.value = result.localidade || '';
+        addressForm.elements.state.value = result.uf || '';
+        addressStatus.textContent = 'Endereço encontrado. Informe o número e confira os dados.';
+        addressForm.elements.number.focus();
+      } catch (_) {
+        addressStatus.textContent = 'CEP não encontrado. Confira o número e tente novamente.';
+      }
+    }
+    addressForm.querySelector('.restored-address-cep').addEventListener('click', lookupAddress);
+    addressForm.elements.cep.addEventListener('input', function () {
+      var digits = this.value.replace(/\D/g, '').slice(0, 8);
+      this.value = digits.length > 5 ? digits.slice(0, 5) + '-' + digits.slice(5) : digits;
+    });
+
+    function showDeliveryStage() {
+      identification.style.display = 'none';
+      paymentStage.style.display = 'none';
+      deliveryStage.style.display = 'block';
       var steps = document.querySelectorAll('.dot-progress-bar');
       if (steps[2]) steps[2].click();
       window.location.hash = '#/orderform/shipping';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showPaymentStage() {
+      identification.style.display = 'none';
+      deliveryStage.style.display = 'none';
+      paymentStage.style.display = 'block';
+      var steps = document.querySelectorAll('.dot-progress-bar');
+      if (steps[3]) steps[3].click();
+      window.location.hash = '#/orderform/payment';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    identificationForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!identificationForm.reportValidity()) return;
+      showDeliveryStage();
+    });
+
+    addressForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      if (!addressForm.reportValidity()) return;
+      var submit = addressForm.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      submit.textContent = 'Salvando endereço...';
+      try {
+        var payload = {};
+        ['recipient', 'cep', 'street', 'number', 'complement', 'neighborhood', 'city', 'state'].forEach(function (field) {
+          payload[field] = addressForm.elements[field].value.trim();
+        });
+        await cartRequest('address', { address: payload });
+        showPaymentStage();
+      } catch (error) {
+        addressStatus.textContent = error.message || 'Não foi possível salvar o endereço.';
+      } finally {
+        submit.disabled = false;
+        submit.textContent = 'Continuar para pagamento';
+      }
     });
 
     advance.addEventListener('click', function (event) {
@@ -235,6 +320,13 @@
     }, true);
 
     if (window.location.hash.indexOf('/profile') !== -1) advance.click();
+    else if (window.location.hash.indexOf('/shipping') !== -1) {
+      advance.click();
+      showDeliveryStage();
+    } else if (window.location.hash.indexOf('/payment') !== -1) {
+      advance.click();
+      showPaymentStage();
+    }
   }
 
   function initCheckoutQuantity() {

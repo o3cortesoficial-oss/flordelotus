@@ -51,6 +51,28 @@ export default async function handler(request, response) {
         store: body.shipping.store ? String(body.shipping.store).slice(0, 300) : null,
         rate: body.shipping.method === 'delivery' ? 'standard-free' : 'pickup',
       };
+    } else if (action === 'address') {
+      const address = body.address || {};
+      const cep = String(address.cep || '').replace(/\D/g, '').slice(0, 8);
+      const required = ['recipient', 'street', 'number', 'neighborhood', 'city', 'state'];
+      if (cep.length !== 8 || required.some(field => !String(address[field] || '').trim())) {
+        return response.status(422).json({ error: 'Preencha o endereço completo' });
+      }
+      state.shipping = {
+        method: 'delivery',
+        rate: 'standard-free',
+        cep,
+        recipient: String(address.recipient).trim().slice(0, 120),
+        street: String(address.street).trim().slice(0, 160),
+        number: String(address.number).trim().slice(0, 30),
+        complement: String(address.complement || '').trim().slice(0, 100),
+        neighborhood: String(address.neighborhood).trim().slice(0, 100),
+        city: String(address.city).trim().slice(0, 100),
+        state: String(address.state).trim().toUpperCase().slice(0, 2),
+        address: [address.street, address.number, address.complement, address.neighborhood, address.city, address.state]
+          .map(value => String(value || '').trim()).filter(Boolean).join(', ').slice(0, 500),
+        store: null,
+      };
     } else {
       return response.status(400).json({ error: 'Ação inválida' });
     }
